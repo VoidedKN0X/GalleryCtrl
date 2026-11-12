@@ -1,0 +1,584 @@
+package com.vknxworks.galleryctrl.ui.gallery
+
+import android.Manifest
+import android.app.Activity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as rowItems
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Slideshow
+import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vknxworks.galleryctrl.R
+import com.vknxworks.galleryctrl.container
+import com.vknxworks.galleryctrl.media.Album
+import com.vknxworks.galleryctrl.media.Duplicates
+import com.vknxworks.galleryctrl.media.MediaItem
+import com.vknxworks.galleryctrl.media.MediaRequests
+import com.vknxworks.galleryctrl.media.Sharing
+import com.vknxworks.galleryctrl.media.VaultEntry
+import com.vknxworks.galleryctrl.ui.common.hasPermission
+import com.vknxworks.galleryctrl.ui.common.openAppSettings
+import com.vknxworks.galleryctrl.ui.components.CtrlButton
+import com.vknxworks.galleryctrl.ui.components.CtrlSquareButton
+import com.vknxworks.galleryctrl.ui.components.CtrlTextField
+import com.vknxworks.galleryctrl.ui.components.MessageView
+import com.vknxworks.galleryctrl.ui.components.ScreenTopBar
+import com.vknxworks.galleryctrl.ui.components.SectionLabel
+import com.vknxworks.galleryctrl.ui.components.TabTitle
+import com.vknxworks.galleryctrl.ui.components.bottomClearance
+import com.vknxworks.galleryctrl.ui.lock.AppLockGate
+import com.vknxworks.galleryctrl.ui.nav.AlbumRoute
+import com.vknxworks.galleryctrl.ui.nav.DuplicatesRoute
+import com.vknxworks.galleryctrl.ui.nav.LocalNavigator
+import com.vknxworks.galleryctrl.ui.nav.SearchRoute
+import com.vknxworks.galleryctrl.ui.nav.VaultRoute
+import com.vknxworks.galleryctrl.ui.nav.ViewerRoute
+import com.vknxworks.galleryctrl.ui.theme.CtrlColors
+import com.vknxworks.galleryctrl.ui.theme.CtrlType
+import com.vknxworks.galleryctrl.ui.theme.Gutter
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+// ---------- Permission ----------
+
+private val MEDIA_PERMISSIONS = arrayOf(
+    Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+    Manifest.permission.ACCESS_MEDIA_LOCATION,
+)
+
+/** Asks for access to photos and videos, then starts the library; shows a card when access is limited or missing. */
+@Composable
+fun MediaAccess(content: @Composable (limited: Boolean, pickMore: () -> Unit) -> Unit) {
+    val context = LocalContext.current
+    val c = context.container
+    var tick by remember { mutableIntStateOf(0) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { tick++ }
+    val full = remember(tick) { context.hasPermission(Manifest.permission.READ_MEDIA_IMAGES) }
+    val partial = remember(tick) { !full && context.hasPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) }
+    var asked by remember { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        asked = true
+        tick++
+        c.media.reload()
+    }
+    LaunchedEffect(full, partial) {
+        if (full || partial) c.media.start() else if (!asked) launcher.launch(MEDIA_PERMISSIONS)
+    }
+    if (full || partial) {
+        content(partial) { launcher.launch(MEDIA_PERMISSIONS) }
+    } else {
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            TabTitle(stringResource(R.string.tab_photos))
+            MessageView(
+                Icons.Outlined.Photo,
+                stringResource(R.string.access_title),
+                stringResource(R.string.access_body),
+                actionLabel = stringResource(if (asked) R.string.open_permissions else R.string.allow_access),
+                onAction = { if (asked) openAppSettings(context) else launcher.launch(MEDIA_PERMISSIONS) },
+            )
+        }
+    }
+}
+
+// ---------- Shared grid with selection ----------
+
+/** Runs a MediaStore request (Android shows its own confirmation) and reloads afterwards. */
+@Composable
+fun rememberMediaRequest(onDone: (Boolean) -> Unit = {}): (android.app.PendingIntent) -> Unit {
+    val c = LocalContext.current.container
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
+        c.media.reload()
+        onDone(res.resultCode == Activity.RESULT_OK)
+    }
+    return { pi -> runCatching { launcher.launch(IntentSenderRequest.Builder(pi.intentSender).build()) } }
+}
+
+@Composable
+fun Thumb(item: MediaItem, px: Int, modifier: Modifier = Modifier) {
+    val c = LocalContext.current.container
+    val bmp by produceState<android.graphics.Bitmap?>(null, item.id) { value = c.media.thumbnail(item, px) }
+    Box(modifier.background(CtrlColors.Raised)) {
+        bmp?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        if (item.isVideo) {
+            Row(Modifier.align(Alignment.BottomStart).padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.PlayCircle, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.size(3.dp))
+                Text(durationText(item.durationMs), style = CtrlType.Data, color = Color.White)
+            }
+        }
+        if (item.favorite) Icon(Icons.Outlined.Favorite, null, tint = Color.White, modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp).size(14.dp))
+    }
+}
+
+fun durationText(ms: Long): String {
+    val s = ms / 1000
+    return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
+}
+
+private fun dayOf(ms: Long): LocalDate = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate()
+
+@Composable
+private fun dayLabel(d: LocalDate): String = when (d) {
+    LocalDate.now() -> stringResource(R.string.today)
+    LocalDate.now().minusDays(1) -> stringResource(R.string.yesterday)
+    else -> d.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+}
+
+/**
+ * A grid of photos grouped by day. Tap opens the viewer; long-press starts selecting (tap more to add).
+ * Selection actions: share, favourite, delete (for good), move to the vault.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MediaGrid(
+    items: List<MediaItem>,
+    modifier: Modifier = Modifier,
+    groupByDay: Boolean = true,
+    header: (LazyGridScope.() -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val c = context.container
+    val nav = LocalNavigator.current
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    var selected by remember { mutableStateOf(setOf<Long>()) }
+    val request = rememberMediaRequest { selected = emptySet() }
+    val scope = rememberCoroutineScope()
+    val px = with(LocalDensity.current) { (360.dp / settings.columns).roundToPx() }.coerceAtLeast(96)
+    BackHandler(enabled = selected.isNotEmpty()) { selected = emptySet() }
+
+    fun open(item: MediaItem) {
+        c.viewerList.value = items
+        c.viewerStart.value = items.indexOf(item).coerceAtLeast(0)
+        c.viewerSlideshow.value = false
+        nav.navigate(ViewerRoute)
+    }
+
+    Box(modifier) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(settings.columns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            header?.invoke(this)
+            val groups = if (groupByDay) items.groupBy { dayOf(it.date) }.toList() else listOf(LocalDate.MIN to items)
+            groups.forEach { (day, list) ->
+                if (groupByDay) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "h$day") {
+                        Text(dayLabel(day), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.padding(start = Gutter, top = 18.dp, bottom = 8.dp))
+                    }
+                }
+                items(list, key = { it.id }) { item ->
+                    val isSel = item.id in selected
+                    val scale by animateFloatAsState(if (isSel) 0.86f else 1f, label = "sel")
+                    Box(
+                        Modifier.aspectRatio(1f).combinedClickable(
+                            onClick = { if (selected.isNotEmpty()) selected = if (isSel) selected - item.id else selected + item.id else open(item) },
+                            onLongClick = { selected = selected + item.id },
+                        ),
+                    ) {
+                        Thumb(item, px, Modifier.fillMaxSize().scale(scale).clip(RoundedCornerShape(if (isSel) 12.dp else 0.dp)))
+                        if (isSel) Icon(Icons.Outlined.CheckCircle, null, tint = CtrlColors.Accent, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(22.dp))
+                    }
+                }
+            }
+        }
+        if (selected.isNotEmpty()) {
+            val sel = items.filter { it.id in selected }
+            SelectionBar(
+                count = sel.size,
+                modifier = Modifier.align(Alignment.BottomCenter).bottomClearance(8.dp),
+                onShare = { Sharing.share(context, sel, settings.stripLocation) },
+                onFavorite = { request(MediaRequests.favorite(context, sel, !sel.all { it.favorite })) },
+                onDelete = { request(MediaRequests.delete(context, sel)) },
+                onVault = {
+                    scope.launch {
+                        val stored = c.photoVault.add(sel)
+                        if (stored.isNotEmpty()) request(MediaRequests.delete(context, stored))
+                    }
+                },
+                onClear = { selected = emptySet() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionBar(count: Int, modifier: Modifier, onShare: () -> Unit, onFavorite: () -> Unit, onDelete: () -> Unit, onVault: () -> Unit, onClear: () -> Unit) {
+    Row(
+        modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CtrlColors.Surface).padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            pluralStringResource(R.plurals.selected_count, count, count), style = CtrlType.Status, color = CtrlColors.Text,
+            modifier = Modifier.weight(1f).clickable(onClick = onClear).padding(12.dp),
+        )
+        CtrlSquareButton(Icons.Outlined.Share, stringResource(R.string.share), onShare)
+        CtrlSquareButton(Icons.Outlined.FavoriteBorder, stringResource(R.string.favorite), onFavorite)
+        CtrlSquareButton(Icons.Outlined.Lock, stringResource(R.string.move_to_vault), onVault)
+        CtrlSquareButton(Icons.Outlined.Delete, stringResource(R.string.delete), onDelete)
+    }
+}
+
+// ---------- Tabs ----------
+
+/** The Photos tab: everything, newest first, grouped by day, with "On this day" at the top. */
+@Composable
+fun PhotosScreen() {
+    val c = LocalContext.current.container
+    val nav = LocalNavigator.current
+    val scope = rememberCoroutineScope()
+    MediaAccess { limited, pickMore ->
+        val items by c.media.items.collectAsStateWithLifecycle()
+        val loading by c.media.loading.collectAsStateWithLifecycle()
+        val settings by c.settings.settings.collectAsStateWithLifecycle()
+        val today = LocalDate.now()
+        val memories = remember(items) {
+            items.filter { val d = dayOf(it.date); d.monthValue == today.monthValue && d.dayOfMonth == today.dayOfMonth && d.year < today.year && !it.isVideo }.take(20)
+        }
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            TabTitle(stringResource(R.string.tab_photos)) {
+                CtrlSquareButton(Icons.Outlined.Search, stringResource(R.string.search), { nav.navigate(SearchRoute) })
+                CtrlSquareButton(Icons.Outlined.GridView, stringResource(R.string.grid_size), {
+                    scope.launch { c.settings.update { s -> s.copy(columns = if (s.columns >= 5) 3 else s.columns + 1) } }
+                })
+            }
+            if (items.isEmpty() && !loading) {
+                if (limited) {
+                    MessageView(
+                        Icons.Outlined.Photo, stringResource(R.string.limited_access), stringResource(R.string.limited_empty),
+                        actionLabel = stringResource(R.string.choose_photos), onAction = pickMore,
+                    )
+                } else {
+                    MessageView(Icons.Outlined.Photo, stringResource(R.string.no_photos), stringResource(R.string.no_photos_body))
+                }
+            } else {
+                MediaGrid(items, Modifier.weight(1f)) {
+                    if (limited) {
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "limited") {
+                            Row(
+                                Modifier.padding(horizontal = Gutter, vertical = 6.dp).clip(RoundedCornerShape(16.dp)).background(CtrlColors.Surface).clickable(onClick = pickMore).padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(stringResource(R.string.limited_access), style = MaterialTheme.typography.bodyMedium, color = CtrlColors.Text, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.choose_more), style = CtrlType.Status, color = CtrlColors.AccentText)
+                            }
+                        }
+                    }
+                    if (settings.onThisDay && memories.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "memories") { Memories(memories) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Memories(items: List<MediaItem>) {
+    val c = LocalContext.current.container
+    val nav = LocalNavigator.current
+    Column(Modifier.padding(top = 8.dp)) {
+        SectionLabel(stringResource(R.string.on_this_day), Modifier.padding(start = Gutter, bottom = 8.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = Gutter), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            rowItems(items, key = { it.id }) { item ->
+                Box(Modifier.size(132.dp, 176.dp).clip(RoundedCornerShape(18.dp)).clickable {
+                    c.viewerList.value = items
+                    c.viewerStart.value = items.indexOf(item)
+                    c.viewerSlideshow.value = false
+                    nav.navigate(ViewerRoute)
+                }) {
+                    Thumb(item, 384, Modifier.fillMaxSize())
+                    Text(
+                        stringResource(R.string.years_ago, LocalDate.now().year - dayOf(item.date).year),
+                        style = CtrlType.LabelStrong, color = Color.White,
+                        modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The Albums tab: collections (favourites, videos, vault, duplicates) and every folder. */
+@Composable
+fun AlbumsScreen() {
+    val c = LocalContext.current.container
+    val nav = LocalNavigator.current
+    MediaAccess { _, _ ->
+        val items by c.media.items.collectAsStateWithLifecycle()
+        val vault by c.photoVault.entries.collectAsStateWithLifecycle()
+        val albums = remember(items) { c.media.albums(items) }
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            TabTitle(stringResource(R.string.tab_albums))
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = Gutter - 6.dp, end = Gutter - 6.dp, bottom = 120.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(Modifier.padding(horizontal = 6.dp)) {
+                        CollectionRow(Icons.Outlined.Favorite, stringResource(R.string.favorites), items.count { it.favorite }) { nav.navigate(AlbumRoute("favorites")) }
+                        CollectionRow(Icons.Outlined.Videocam, stringResource(R.string.videos), items.count { it.isVideo }) { nav.navigate(AlbumRoute("videos")) }
+                        CollectionRow(Icons.Outlined.Lock, stringResource(R.string.vault), vault.size) { nav.navigate(VaultRoute) }
+                        CollectionRow(Icons.Outlined.ContentCopy, stringResource(R.string.duplicates), null) { nav.navigate(DuplicatesRoute) }
+                        Spacer(Modifier.height(12.dp))
+                        SectionLabel(stringResource(R.string.folders))
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+                items(albums, key = { it.id }) { a -> AlbumCard(a) { nav.navigate(AlbumRoute("album", a.id, a.name)) } }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollectionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, count: Int?, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(vertical = 12.dp, horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = CtrlColors.Text)
+        Spacer(Modifier.size(16.dp))
+        Text(title, style = MaterialTheme.typography.bodyLarge, color = CtrlColors.Text, modifier = Modifier.weight(1f))
+        if (count != null) Text(count.toString(), style = CtrlType.Data, color = CtrlColors.Muted)
+    }
+}
+
+@Composable
+private fun AlbumCard(a: Album, onClick: () -> Unit) {
+    Column(Modifier.padding(6.dp).clickable(onClick = onClick)) {
+        Thumb(a.cover, 480, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)))
+        Spacer(Modifier.height(6.dp))
+        Text(a.name.ifBlank { "—" }, style = MaterialTheme.typography.bodyMedium, color = CtrlColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(a.count.toString(), style = CtrlType.Data, color = CtrlColors.Muted)
+    }
+}
+
+/** One album, favourites or videos. */
+@Composable
+fun AlbumScreen(route: AlbumRoute) {
+    val c = LocalContext.current.container
+    val items by c.media.items.collectAsStateWithLifecycle()
+    val list = remember(items, route) {
+        when (route.kind) {
+            "favorites" -> items.filter { it.favorite }
+            "videos" -> items.filter { it.isVideo }
+            else -> items.filter { it.albumId == route.albumId }
+        }
+    }
+    val title = when (route.kind) {
+        "favorites" -> stringResource(R.string.favorites)
+        "videos" -> stringResource(R.string.videos)
+        else -> route.title
+    }
+    val nav = LocalNavigator.current
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar(title) {
+            if (list.any { !it.isVideo }) {
+                CtrlSquareButton(Icons.Outlined.Slideshow, stringResource(R.string.slideshow), {
+                    c.viewerList.value = list.filterNot { it.isVideo }
+                    c.viewerStart.value = 0
+                    c.viewerSlideshow.value = true
+                    nav.navigate(ViewerRoute)
+                })
+            }
+        }
+        if (list.isEmpty()) MessageView(Icons.Outlined.PhotoLibrary, stringResource(R.string.empty_album))
+        else MediaGrid(list, Modifier.weight(1f).navigationBarsPadding(), groupByDay = route.kind != "album")
+    }
+}
+
+/** Search by file name, folder, or date ("2024", "june", "12 november"). */
+@Composable
+fun SearchScreen() {
+    val c = LocalContext.current.container
+    val items by c.media.items.collectAsStateWithLifecycle()
+    var query by remember { mutableStateOf("") }
+    val fmt = remember { DateTimeFormatter.ofPattern("d MMMM yyyy EEEE") }
+    val shown = remember(items, query) {
+        val q = query.trim().lowercase()
+        if (q.isEmpty()) emptyList() else items.filter {
+            it.name.lowercase().contains(q) || it.album.lowercase().contains(q) || dayOf(it.date).format(fmt).lowercase().contains(q)
+        }
+    }
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar(stringResource(R.string.search))
+        CtrlTextField(
+            query, { query = it },
+            Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
+            placeholder = { Text(stringResource(R.string.search_hint)) },
+            leadingIcon = { Icon(Icons.Outlined.Search, null) },
+            singleLine = true,
+        )
+        if (query.isNotBlank() && shown.isEmpty()) MessageView(Icons.Outlined.Search, stringResource(R.string.no_results))
+        else MediaGrid(shown, Modifier.weight(1f).navigationBarsPadding())
+    }
+}
+
+/** Duplicate and near-identical photos, found on the phone. Keep the best one of each group. */
+@Composable
+fun DuplicatesScreen() {
+    val context = LocalContext.current
+    val c = context.container
+    val items by c.media.items.collectAsStateWithLifecycle()
+    var progress by remember { mutableStateOf(0f) }
+    var groups by remember { mutableStateOf<List<List<MediaItem>>?>(null) }
+    val request = rememberMediaRequest()
+    LaunchedEffect(items.size) {
+        groups = Duplicates.find(items, { c.media.thumbnail(it, 96) }, { progress = it })
+    }
+    val px = with(LocalDensity.current) { 110.dp.roundToPx() }
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar(stringResource(R.string.duplicates))
+        val g = groups
+        when {
+            g == null -> Column(Modifier.padding(Gutter)) {
+                Text(stringResource(R.string.finding_duplicates), color = CtrlColors.Text)
+                Spacer(Modifier.height(10.dp))
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = CtrlColors.Accent, trackColor = CtrlColors.ProgressTrack)
+            }
+            g.isEmpty() -> MessageView(Icons.Outlined.ContentCopy, stringResource(R.string.no_duplicates))
+            else -> LazyVerticalGrid(GridCells.Fixed(3), Modifier.fillMaxSize().navigationBarsPadding(), contentPadding = PaddingValues(Gutter)) {
+                g.forEachIndexed { i, group ->
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "g$i") {
+                        Row(Modifier.padding(top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(pluralStringResource(R.plurals.similar_count, group.size, group.size), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.weight(1f))
+                            CtrlButton(stringResource(R.string.keep_best), { request(MediaRequests.delete(context, group.drop(1))) })
+                        }
+                    }
+                    items(group, key = { "d${it.id}" }) { item ->
+                        Box(Modifier.padding(2.dp).aspectRatio(1f).clip(RoundedCornerShape(10.dp))) {
+                            Thumb(item, px, Modifier.fillMaxSize())
+                            if (item == group.first()) Text(stringResource(R.string.best), style = CtrlType.LabelStrong, color = Color.White, modifier = Modifier.align(Alignment.TopStart).background(CtrlColors.Accent.copy(alpha = 0.85f)).padding(horizontal = 6.dp, vertical = 2.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The vault, behind the app PIN when the lock is on. */
+@Composable
+fun VaultGate() {
+    val c = LocalContext.current.container
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    if (settings.lockVault && c.vault.enabled) AppLockGate { VaultScreen() } else VaultScreen()
+}
+
+@Composable
+private fun VaultScreen() {
+    val context = LocalContext.current
+    val c = context.container
+    val entries by c.photoVault.entries.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var open by remember { mutableStateOf<VaultEntry?>(null) }
+    val px = with(LocalDensity.current) { 120.dp.roundToPx() }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { c.photoVault.closeCache() } }
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar(stringResource(R.string.vault))
+        if (entries.isEmpty()) {
+            MessageView(Icons.Outlined.Lock, stringResource(R.string.vault_empty), stringResource(R.string.vault_body))
+        } else {
+            Text(stringResource(R.string.vault_hint), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+            LazyVerticalGrid(GridCells.Fixed(3), Modifier.fillMaxSize().navigationBarsPadding(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                items(entries, key = { it.id }) { e ->
+                    val bmp by produceState<android.graphics.Bitmap?>(null, e.id) { value = c.photoVault.thumbnail(e, px) }
+                    Box(Modifier.aspectRatio(1f).background(CtrlColors.Raised).clickable { open = e }) {
+                        bmp?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                        if (e.mime.startsWith("video/")) Icon(Icons.Outlined.PlayCircle, null, tint = Color.White, modifier = Modifier.align(Alignment.Center))
+                    }
+                }
+            }
+        }
+    }
+    var confirmDelete by remember { mutableStateOf<VaultEntry?>(null) }
+    open?.let { e ->
+        VaultViewer(e, onClose = { open = null }, onRestore = { scope.launch { c.photoVault.restore(e); open = null } }, onDelete = { confirmDelete = e })
+    }
+    confirmDelete?.let { e ->
+        com.vknxworks.galleryctrl.ui.components.ConfirmDialog(
+            stringResource(R.string.vault_delete_title), stringResource(R.string.vault_delete_body), stringResource(R.string.vault_delete),
+            onDismiss = { confirmDelete = null },
+        ) { c.photoVault.remove(e); confirmDelete = null; open = null }
+    }
+}
+

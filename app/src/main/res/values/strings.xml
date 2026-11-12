@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Library, sharing, vault and privacy</string>
+    <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening GalleryCtrl. The vault can ask for it on its own too.</string>
+    <string name="app_lock_footer">GalleryCtrl works fully offline: it has no internet permission, analytics, cloud or AI service. Your photos stay where they are on this phone.</string>
+    <string name="lock_prompt_subtitle">Your photos</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered. GalleryCtrl will delete everything in the vault (it\'s what the lock protects), reset its settings and turn the app lock off. Your photo library itself isn\'t touched.</string>
+
+    <!-- Tabs -->
+    <string name="tab_photos">Photos</string>
+    <string name="tab_albums">Albums</string>
+
+    <!-- Access -->
+    <string name="access_title">Allow access to photos and videos</string>
+    <string name="access_body">GalleryCtrl shows the photos and videos on this phone. It reads them in place and never sends them anywhere.</string>
+    <string name="allow_access">Allow access</string>
+    <string name="open_permissions">Open permissions</string>
+    <string name="limited_access">You\'ve allowed some photos only.</string>
+    <string name="choose_more">CHOOSE MORE</string>
+    <string name="limited_empty">GalleryCtrl can only see the photos you pick. Choose some, or allow all photos in Android\'s settings.</string>
+    <string name="choose_photos">Choose photos</string>
+
+    <!-- Photos -->
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="search">Search</string>
+    <string name="search_hint">Name, folder or date (e.g. \"june 2024\")</string>
+    <string name="no_results">Nothing found</string>
+    <string name="grid_size">Grid size</string>
+    <string name="no_photos">No photos yet</string>
+    <string name="no_photos_body">Photos and videos you take or save show up here.</string>
+    <string name="on_this_day">ON THIS DAY</string>
+    <string name="years_ago">%1$d YEARS AGO</string>
+    <string name="share">Share</string>
+    <string name="favorite">Favourite</string>
+    <string name="delete">Delete</string>
+    <string name="move_to_vault">Move to vault</string>
+    <string name="move_to_vault_sub">Encrypted inside GalleryCtrl; removed from the library</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+
+    <!-- Albums -->
+    <string name="favorites">Favourites</string>
+    <string name="videos">Videos</string>
+    <string name="vault">Vault</string>
+    <string name="duplicates">Duplicates</string>
+    <string name="folders">FOLDERS</string>
+    <string name="empty_album">Nothing here</string>
+    <string name="slideshow">Slideshow</string>
+
+    <!-- Duplicates -->
+    <string name="finding_duplicates">Comparing your photos on the phone…</string>
+    <string name="no_duplicates">No duplicates found</string>
+    <string name="keep_best">Keep best</string>
+    <string name="best">BEST</string>
+    <plurals name="similar_count">
+        <item quantity="one">%1$d similar photo</item>
+        <item quantity="other">%1$d similar photos</item>
+    </plurals>
+
+    <!-- Vault -->
+    <string name="vault_empty">The vault is empty</string>
+    <string name="vault_body">Select photos or videos and tap the lock to move them here. They\'re encrypted inside GalleryCtrl and removed from your library, so other apps can\'t see them.</string>
+    <string name="vault_hint">Encrypted with a key in this phone\'s secure hardware. Tap an item to view, restore or delete it.</string>
+    <string name="vault_restore">Restore to library</string>
+    <string name="vault_delete">Delete</string>
+    <string name="vault_delete_title">Delete from the vault?</string>
+    <string name="vault_delete_body">This is the only copy. It can\'t be recovered.</string>
+
+    <!-- Viewer -->
+    <string name="more">More</string>
+    <string name="edit">Edit</string>
+    <string name="info">Info</string>
+    <string name="set_as">Set as</string>
+    <string name="slideshow_stop">TAP TO STOP</string>
+    <string name="info_name">Name</string>
+    <string name="info_date">Date</string>
+    <string name="info_size">Size</string>
+    <string name="info_duration">Length</string>
+    <string name="info_folder">Folder</string>
+    <string name="info_camera">Camera</string>
+    <string name="info_lens">Lens</string>
+    <string name="info_exposure">Exposure</string>
+    <string name="info_location">Location</string>
+
+    <!-- Settings -->
+    <string name="group_library">Library</string>
+    <string name="on_this_day_setting">On this day</string>
+    <string name="on_this_day_sub">Photos from this date in earlier years, at the top of Photos</string>
+    <string name="slideshow_interval">Slideshow speed</string>
+    <string name="slide_2">2 seconds</string>
+    <string name="slide_4">4 seconds</string>
+    <string name="slide_8">8 seconds</string>
+    <string name="group_sharing">Sharing</string>
+    <string name="strip_location">Remove location when sharing</string>
+    <string name="strip_location_sub">The shared copy has no GPS position; your original keeps it</string>
+    <string name="sharing_footer">Applies to JPEG, WebP, PNG and HEIC photos. Videos are shared as they are.</string>
+    <string name="lock_vault">Ask for the PIN for the vault</string>
+    <string name="lock_vault_sub">Uses the app lock\'s PIN or fingerprint</string>
+    <string name="vault_footer">The vault is encrypted with AES-256 and a key held in this phone\'s secure hardware. It isn\'t included in backups.</string>
+</resources>

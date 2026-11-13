@@ -97,7 +97,11 @@
     <string name="group_sharing">Sharing</string>
     <string name="strip_location">Remove location when sharing</string>
     <string name="strip_location_sub">The shared copy has no GPS position; your original keeps it</string>
-    <string name="sharing_footer">Applies to JPEG, WebP, PNG and HEIC photos. Videos are shared as they are.</string>
+    <string name="sharing_footer">Applies to JPEG, WebP, PNG and HEIC photos. A photo whose location can\'t be removed isn\'t shared while this is on. Videos are shared as they are.</string>
+    <plurals name="share_location_not_removed">
+        <item quantity="one">1 photo wasn\'t shared: its location couldn\'t be removed. Turn off \"Remove location when sharing\" to share it as it is.</item>
+        <item quantity="other">%d photos weren\'t shared: their location couldn\'t be removed. Turn off \"Remove location when sharing\" to share them as they are.</item>
+    </plurals>
     <string name="lock_vault">Ask for the PIN for the vault</string>
     <string name="lock_vault_sub">Uses the app lock\'s PIN or fingerprint</string>
     <string name="vault_footer">The vault is encrypted with AES-256 and a key held in this phone\'s secure hardware. It isn\'t included in backups.</string>

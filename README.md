@@ -91,8 +91,8 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - **Unlock with fingerprint** (optional) only accepts strong biometrics, checked by the phone's secure hardware. The PIN is still needed after the phone restarts and at least every 72 hours.
 - **The PIN is never stored.** It's stretched with 600,000 rounds of PBKDF2 and mixed with a key held in the phone's secure hardware.
 - **Wrong PINs:** after 5 tries you wait 30 seconds, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't skip the wait.
-- **The vault** asks for the PIN by itself when the lock is on (Settings > Vault). Vault files are encrypted with AES-256-GCM; the key never leaves the phone's secure hardware, so a copy of the files is useless elsewhere. Viewed items are decrypted only into GalleryCtrl's private cache and wiped when you leave the vault or the app locks.
-- **Forgot your PIN?** It can't be recovered. The lock screen offers to delete the vault (it's what the lock protects), reset GalleryCtrl's settings and turn the lock off. Your photo library isn't touched.
+- **The vault** asks for the PIN by itself when the lock is on (Settings > Vault). Vault files, and the list of what's in the vault, are encrypted with AES-256-GCM (a fresh random IV per file); the key never leaves the phone's secure hardware, so a copy of the files is useless elsewhere. Photos and thumbnails are decrypted in memory only. A video you play is decrypted into GalleryCtrl's private cache, then overwritten and deleted when you leave the vault or the app locks (or at the next start if the app was closed). Restoring goes straight from the encrypted file into your library.
+- **Forgot your PIN?** It can't be recovered. The lock screen offers to delete the vault (it's what the lock protects, and its key is deleted too), reset GalleryCtrl's settings and turn the lock off. Your photo library isn't touched.
 
 **Hide in screenshots** and **Hide in recent apps** (both off by default): the first keeps GalleryCtrl out of screenshots and screen recordings, the second shows a blank card in the recent-apps view while screenshots still work.
 
@@ -102,7 +102,7 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 
 - Your photos are read in place. GalleryCtrl keeps no copy, index or thumbnails of its own outside Android's thumbnail store; the duplicate finder works in memory.
 - No cloud sync, face recognition service, AI eraser or anything else that sends photos away.
-- Shared copies have their location removed by default and are deleted from GalleryCtrl's cache the next time it starts.
+- Shared copies have their location removed by default (GPS tags, and XMP data that carries a position) and are deleted from GalleryCtrl's cache the next time it starts. Each copy is checked: a photo whose location can't be removed isn't shared while this setting is on.
 - The vault and settings are in GalleryCtrl's private storage. Android backups don't include them, and GalleryCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
 - The Support, Report a bug, Source code and Licence links on the You page open in your browser, only when you tap them.
 

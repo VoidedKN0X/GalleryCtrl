@@ -4,6 +4,28 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.1.1 (2026-11-13)
+
+A security and privacy update for the vault and for sharing.
+
+### Security
+
+- **The vault's list is encrypted too.** The names, dates and sizes of what's in your vault are now encrypted like the photos themselves. The old readable list is converted and wiped the first time you open GalleryCtrl after updating.
+- **Vault photos are no longer written to storage to show them.** Photos and their thumbnails are decrypted in memory only. Only a video you play still needs a temporary file in GalleryCtrl's private cache; it's overwritten and deleted when you leave the vault, when the app locks, and at the next start if GalleryCtrl was closed while a video was open.
+- **Restoring from the vault** goes straight from the encrypted file into your library, with no unencrypted copy in between.
+- **"Forgot PIN?" now also deletes the vault's key,** so nothing left behind on the phone's storage can be decrypted any more.
+- A damaged or half-written vault file is never shown or restored half-way.
+
+### Privacy
+
+- **Sharing never leaks your location by accident.** Before, if GalleryCtrl couldn't remove the location from a photo (for example some HEIC photos), the photo was shared with its location. Now the shared copy is checked, and a photo whose location can't be removed isn't shared; a message tells you, and you can turn off "Remove location when sharing" to share it as it is. Location stored in a photo's XMP data is removed too.
+
+### Performance
+
+- Preparing photos to share happens in the background, so the app doesn't freeze when you share many large photos.
+- Vault thumbnails are kept in memory while you scroll instead of being decrypted again.
+- Less work on the main thread when GalleryCtrl starts.
+
 ## v0.1.0 (2026-11-12)
 
 The first release of GalleryCtrl: a private, offline gallery.

@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Manual dependency container; one per process. */
@@ -23,7 +24,7 @@ class AppContainer(val context: Context) {
     val settings = SettingsRepository(context, appScope)
     val media = MediaRepository(context, appScope)
     /** The encrypted private vault for photos and videos. */
-    val photoVault = Vault(context)
+    val photoVault = Vault(context, appScope)
 
     /** Which tab to open. */
     val openTab = MutableStateFlow<Int?>(null)
@@ -38,7 +39,8 @@ class AppContainer(val context: Context) {
 
     init {
         AppLock.onLocked = { onLocked() }
-        Sharing.clearCache(context)
+        // Leftover share copies from last time, off the main thread.
+        appScope.launch(Dispatchers.IO) { Sharing.clearCache(context) }
     }
 
     suspend fun enableLock(pin: String) {

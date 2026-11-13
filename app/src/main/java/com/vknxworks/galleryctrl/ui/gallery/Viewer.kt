@@ -346,15 +346,17 @@ private fun InfoSheet(item: MediaItem, onDismiss: () -> Unit) {
 @Composable
 fun VaultViewer(entry: VaultEntry, onClose: () -> Unit, onRestore: () -> Unit, onDelete: () -> Unit) {
     val c = LocalContext.current.container
-    val file by produceState<File?>(null, entry.id) { value = c.photoVault.open(entry) }
+    val video = entry.mime.startsWith("video/")
     BackHandler(onBack = onClose)
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        file?.let { f ->
-            if (entry.mime.startsWith("video/")) VideoBox(Uri.fromFile(f), active = true)
-            else {
-                val bmp by produceState<Bitmap?>(null, f) { value = withContext(Dispatchers.IO) { decodeFile(f, 4096) } }
-                bmp?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
-            }
+        if (video) {
+            // The player needs a file: a decrypted copy in the private cache, wiped when you leave the vault.
+            val file by produceState<File?>(null, entry.id) { value = c.photoVault.open(entry) }
+            file?.let { f -> VideoBox(Uri.fromFile(f), active = true) }
+        } else {
+            // Photos are decrypted in memory only.
+            val bmp by produceState<Bitmap?>(null, entry.id) { value = c.photoVault.image(entry, 4096) }
+            bmp?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
         }
         Row(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.5f)).navigationBarsPadding().padding(vertical = 10.dp),

@@ -578,7 +578,7 @@ private fun VaultScreen() {
         com.vknxworks.galleryctrl.ui.components.ConfirmDialog(
             stringResource(R.string.vault_delete_title), stringResource(R.string.vault_delete_body), stringResource(R.string.vault_delete),
             onDismiss = { confirmDelete = null },
-        ) { c.photoVault.remove(e); confirmDelete = null; open = null }
+        ) { scope.launch { c.photoVault.remove(e) }; confirmDelete = null; open = null }
     }
 }
 

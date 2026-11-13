@@ -5,7 +5,7 @@ Gallery app in the VKNXWorks Ctrl series. Kotlin, Jetpack Compose, Material 3, m
 ## Layout
 
 - `media/Media.kt`: `MediaRepository` over MediaStore Files (images + videos, trashed items excluded), a ContentObserver, Android's thumbnail store with an LRU cache.
-- `media/Actions.kt`: `MediaRequests` (favourite and permanent delete through MediaStore requests; no trash), `Sharing` (copies with GPS removed, FileProvider `share/` only), `Vault` (AES-256-GCM files in `filesDir/vault`, key in AndroidKeyStore, decrypted copies only in `cacheDir/vault`).
+- `media/Actions.kt`: `MediaRequests` (favourite and permanent delete through MediaStore requests; no trash), `Sharing` (copies with GPS removed, FileProvider `share/` only), `Vault` (AES-256-GCM files and an encrypted `index.bin` in `filesDir/vault`, key in AndroidKeyStore; photos and thumbnails decrypted in memory only, videos into `cacheDir/vault`, wiped with `File.wipe()`). Sharing fails closed: a photo whose location can't be removed isn't shared.
 - `media/Duplicates.kt`: dHash + 3×3 colour grid.
 - `ui/gallery`: `Grids.kt` (access, grids, tabs, album, search, duplicates, vault), `Viewer.kt` (pager, zoom, video, Ultra HDR, info, vault viewer).
 
@@ -16,7 +16,7 @@ Gallery app in the VKNXWorks Ctrl series. Kotlin, Jetpack Compose, Material 3, m
 - **Telemetry-free:** no analytics or crash reporting. No cloud or AI services.
 - **No trash bin.** Delete is permanent (MediaStore delete request). Never add a hidden or recoverable copy.
 - Never request MANAGE_EXTERNAL_STORAGE; library changes go through MediaStore requests.
-- Vault plaintext only in `cacheDir/vault`, wiped on leaving the vault and on lock.
+- Vault plaintext only in memory, or (videos and photos over 64 MB) in `cacheDir/vault`, wiped on leaving the vault, on lock and at start. Never write vault names or thumbnails anywhere unencrypted.
 - arm64-v8a only. Every user-facing string goes in `strings.xml`. Settings open only from the profile picture.
 
 ## Releasing

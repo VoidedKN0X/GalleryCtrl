@@ -6,22 +6,36 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.LruCache
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
+import com.vknxworks.galleryctrl.R
+import com.vknxworks.galleryctrl.container
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.UUID
 import javax.crypto.Cipher
@@ -46,34 +60,63 @@ object MediaRequests {
 
 /** Sharing: by default the shared copy has its location removed. */
 object Sharing {
+    /**
+     * Shares [items]. With [stripLocation], photos are copied (off the main thread) with their location removed;
+     * a photo whose location can't be removed is left out rather than shared with it, and a message says so.
+     */
     fun share(context: Context, items: List<MediaItem>, stripLocation: Boolean) {
-        val uris = if (stripLocation) items.mapNotNull { strippedCopy(context, it) } else items.map { it.uri }
-        if (uris.isEmpty()) return
-        val intent = if (uris.size == 1) {
-            Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.first())
-        } else {
-            Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        val app = context.applicationContext
+        app.container.appScope.launch {
+            val uris = withContext(Dispatchers.IO) {
+                if (stripLocation) items.mapNotNull { strippedCopy(app, it) } else items.map { it.uri }
+            }
+            val left = items.size - uris.size
+            if (left > 0) {
+                Toast.makeText(app, app.resources.getQuantityString(R.plurals.share_location_not_removed, left, left), Toast.LENGTH_LONG).show()
+            }
+            if (uris.isEmpty()) return@launch
+            val intent = if (uris.size == 1) {
+                Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.first())
+            } else {
+                Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+            }
+            intent.type = if (items.all { it.isVideo }) "video/*" else if (items.none { it.isVideo }) "image/*" else "*/*"
+            intent.clipData = ClipData.newRawUri(null, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            runCatching { app.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         }
-        intent.type = if (items.all { it.isVideo }) "video/*" else if (items.none { it.isVideo }) "image/*" else "*/*"
-        intent.clipData = ClipData.newRawUri(null, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        runCatching { context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 
-    /** Copies a photo into the share cache and removes GPS tags; videos and other formats are shared as they are. */
+    /**
+     * Copies a photo into the share cache and removes its location (GPS tags, and XMP that carries a position).
+     * The copy is checked afterwards: if the location is still there (a format Android can't rewrite), null is
+     * returned so the photo isn't shared. Videos and other formats are shared as they are.
+     */
     private fun strippedCopy(context: Context, item: MediaItem): Uri? {
         if (item.mime !in setOf("image/jpeg", "image/webp", "image/png", "image/heic", "image/heif")) return item.uri
+        val dir = File(context.cacheDir, "share").apply { mkdirs() }
+        // A fresh folder per copy, and only a safe file name (the name comes from the media store).
+        val out = File(File(dir, UUID.randomUUID().toString()).apply { mkdirs() }, safeName(item.name, "photo.jpg"))
         return runCatching {
-            val dir = File(context.cacheDir, "share").apply { mkdirs() }
-            val out = File(dir, item.name.ifBlank { "photo.jpg" })
             context.contentResolver.openInputStream(item.uri)!!.use { input -> out.outputStream().use { input.copyTo(it) } }
-            runCatching {
-                val exif = ExifInterface(out)
-                LOCATION_TAGS.forEach { exif.setAttribute(it, null) }
-                exif.saveAttributes()
-            }
+            val exif = ExifInterface(out)
+            LOCATION_TAGS.forEach { exif.setAttribute(it, null) }
+            if (exif.getAttribute(ExifInterface.TAG_XMP)?.contains("GPS", ignoreCase = true) == true) exif.setAttribute(ExifInterface.TAG_XMP, null)
+            exif.saveAttributes()
+            val check = ExifInterface(out)
+            check(check.latLong == null && LOCATION_TAGS.none { check.getAttribute(it) != null })
             FileProvider.getUriForFile(context, context.packageName + ".files", out)
-        }.getOrElse { item.uri }
+        }.getOrElse {
+            out.delete()
+            null
+        }
+    }
+
+    /** A file name without folders or odd characters, so it can't point outside the share cache. */
+    internal fun safeName(name: String, fallback: String): String {
+        val clean = name.substringAfterLast('/').substringAfterLast('\\')
+            .filter { it.isLetterOrDigit() || it in "._- ()" }.trim().trimStart('.')
+        return clean.take(120).ifBlank { fallback }
     }
 
     private val LOCATION_TAGS = listOf(
@@ -89,6 +132,28 @@ object Sharing {
     }
 }
 
+/** Overwrites a file's bytes before deleting it (best effort: flash storage may keep old blocks). */
+internal fun File.wipe() {
+    if (isDirectory) {
+        listFiles()?.forEach { it.wipe() }
+    } else if (isFile) {
+        runCatching {
+            java.io.RandomAccessFile(this, "rw").use { raf ->
+                val zeros = ByteArray(64 * 1024)
+                var left = raf.length()
+                raf.seek(0)
+                while (left > 0) {
+                    val n = minOf(left, zeros.size.toLong()).toInt()
+                    raf.write(zeros, 0, n)
+                    left -= n
+                }
+                raf.fd.sync()
+            }
+        }
+    }
+    delete()
+}
+
 @Serializable
 data class VaultEntry(val id: String, val name: String, val mime: String, val date: Long, val size: Long, val width: Int, val height: Int)
 
@@ -96,23 +161,70 @@ data class VaultEntry(val id: String, val name: String, val mime: String, val da
  * The private vault: photos and videos moved here are encrypted (AES-256-GCM, key in the phone's secure
  * hardware) inside GalleryCtrl's own storage, and the originals are deleted from the library (Android asks
  * you to confirm). Opening the vault needs the app PIN when the app lock is on.
+ *
+ * - Every file is `[IV length][IV][ciphertext + GCM tag]`; the Keystore makes a fresh random IV for every file.
+ * - The list of what's in the vault (names, dates, sizes) is encrypted the same way (`index.bin`). An older
+ *   plain `index.json` is converted, then overwritten and deleted, the first time the vault loads.
+ * - Photos (and their thumbnails) are decrypted in memory only. Videos need a file for the player: they're
+ *   decrypted into `cacheDir/vault`, which is overwritten and deleted when you leave the vault, when the app
+ *   locks, and at the next start if the app was closed while a video was open.
+ * - Deleting everything ("Forgot PIN?") also deletes the Keystore key, so nothing left on the flash can be decrypted.
  */
-class Vault(private val context: Context) {
-    private val dir = File(context.filesDir, "vault").apply { mkdirs() }
-    private val index = File(dir, "index.json")
+class Vault(private val context: Context, private val scope: CoroutineScope) {
+    private val dir = File(context.filesDir, "vault")
+    private val index = File(dir, "index.bin")
+    private val legacyIndex = File(dir, "index.json")
+    private val cache: File get() = File(context.cacheDir, "vault")
     private val json = Json { ignoreUnknownKeys = true }
     private val _entries = MutableStateFlow<List<VaultEntry>>(emptyList())
     val entries: StateFlow<List<VaultEntry>> = _entries.asStateFlow()
 
-    init {
-        _entries.value = runCatching { json.decodeFromString<List<VaultEntry>>(index.readText()) }.getOrDefault(emptyList())
+    /** Guards the index: adds, removes and restores happen one at a time. */
+    private val mutex = Mutex()
+    private val loaded = CompletableDeferred<Unit>()
+
+    /** At most two decryptions into memory at once, so a scrolling grid can't run out of memory. */
+    private val decrypting = Semaphore(2)
+
+    /** Decoded thumbnails, in memory only (cleared with [closeCache]). */
+    private val thumbs = object : LruCache<String, Bitmap>(32 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: Bitmap) = value.allocationByteCount
     }
 
+    init {
+        scope.launch(Dispatchers.IO) {
+            dir.mkdirs()
+            // Plaintext left behind if the app was closed while a video was open.
+            cache.wipe()
+            _entries.value = mutex.withLock { load() }
+            loaded.complete(Unit)
+        }
+    }
+
+    private fun load(): List<VaultEntry> {
+        if (index.exists()) {
+            val list = runCatching { json.decodeFromString<List<VaultEntry>>(decrypt(index).use { it.readBytes() }.decodeToString()) }.getOrNull()
+            if (list != null) return list
+            // Never overwrite an index that can't be read right now: keep it aside.
+            index.renameTo(File(dir, "index.unreadable-${System.currentTimeMillis()}.bin"))
+        }
+        if (legacyIndex.exists()) {
+            val list = runCatching { json.decodeFromString<List<VaultEntry>>(legacyIndex.readText()) }.getOrNull()
+            if (list != null && runCatching { save(list) }.isSuccess) {
+                legacyIndex.wipe()
+                return list
+            }
+            return list.orEmpty()
+        }
+        return emptyList()
+    }
+
+    /** Writes the encrypted index (to a temporary file first, then renamed). Call with [mutex] held. */
     private fun save(list: List<VaultEntry>) {
-        _entries.value = list
-        val tmp = File(dir, "index.json.tmp")
-        tmp.writeText(json.encodeToString(list))
+        val tmp = File(dir, "index.bin.tmp")
+        encrypt(tmp) { it.write(json.encodeToString(list).encodeToByteArray()) }
         if (!tmp.renameTo(index)) { index.delete(); tmp.renameTo(index) }
+        _entries.value = list
     }
 
     private fun key(): SecretKey {
@@ -123,65 +235,122 @@ class Vault(private val context: Context) {
             KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
                 .setKeySize(256)
                 .build(),
         )
         return gen.generateKey()
     }
 
+    private fun deleteKey() {
+        runCatching { KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(ALIAS) }
+    }
+
+    /** Encrypts what [write] produces into [file]; the Keystore picks a new random IV. */
+    private fun encrypt(file: File, write: (OutputStream) -> Unit) {
+        val cipher = Cipher.getInstance(GCM).apply { init(Cipher.ENCRYPT_MODE, key()) }
+        val iv = cipher.iv
+        file.outputStream().use { raw ->
+            raw.write(iv.size)
+            raw.write(iv)
+            CipherOutputStream(raw, cipher).use(write)
+        }
+    }
+
+    /** A stream of [file]'s plaintext. The GCM tag is checked at the end: a changed file fails with an IOException. */
+    private fun decrypt(file: File): InputStream {
+        val raw = file.inputStream().buffered()
+        try {
+            val ivLen = raw.read()
+            require(ivLen in 12..16) { "bad header" }
+            val iv = raw.readNBytes(ivLen)
+            require(iv.size == ivLen) { "short header" }
+            val cipher = Cipher.getInstance(GCM).apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, iv)) }
+            return CipherInputStream(raw, cipher)
+        } catch (e: Throwable) {
+            raw.close()
+            throw e
+        }
+    }
+
     private fun file(id: String) = File(dir, "$id.bin")
+
+    /** Where a video's decrypted copy goes: named by its id only, inside the private cache. */
+    private fun plainCopy(entry: VaultEntry): File {
+        val ext = entry.mime.substringAfter('/', "bin").filter { it.isLetterOrDigit() }.take(8).ifBlank { "bin" }
+        return File(cache, "${entry.id.filter { it.isLetterOrDigit() || it == '-' }}.$ext")
+    }
 
     /** Encrypts copies of [items] into the vault. Returns the items that were stored (delete those originals next). */
     suspend fun add(items: List<MediaItem>): List<MediaItem> = withContext(Dispatchers.IO) {
-        val done = ArrayList<MediaItem>()
-        val list = _entries.value.toMutableList()
-        for (item in items) {
-            runCatching {
+        loaded.await()
+        mutex.withLock {
+            val done = ArrayList<MediaItem>()
+            val list = _entries.value.toMutableList()
+            for (item in items) {
                 val id = UUID.randomUUID().toString()
-                val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key()) }
-                file(id).outputStream().use { raw ->
-                    raw.write(cipher.iv.size)
-                    raw.write(cipher.iv)
-                    CipherOutputStream(raw, cipher).use { enc ->
-                        context.contentResolver.openInputStream(item.uri)!!.use { it.copyTo(enc) }
-                    }
+                val ok = runCatching {
+                    encrypt(file(id)) { enc -> context.contentResolver.openInputStream(item.uri)!!.use { it.copyTo(enc) } }
+                }.isSuccess
+                if (ok) {
+                    list += VaultEntry(id, item.name, item.mime, item.date, item.size, item.width, item.height)
+                    done += item
+                } else {
+                    file(id).delete()
                 }
-                list += VaultEntry(id, item.name, item.mime, item.date, item.size, item.width, item.height)
-                done += item
             }
+            if (done.isNotEmpty()) save(list)
+            done
         }
-        save(list)
-        done
     }
 
-    /** Decrypts an entry into a temporary file in the private cache (for viewing or playing); deleted when the vault closes. */
+    /**
+     * Decrypts an entry into the private cache for the video player (or a photo too large to open in memory).
+     * Written to a temporary name first, so a half-written or failed copy is never used; wiped by [closeCache].
+     */
     suspend fun open(entry: VaultEntry): File? = withContext(Dispatchers.IO) {
+        val out = plainCopy(entry)
+        if (out.exists()) return@withContext out
+        val part = File(out.path + ".part")
         runCatching {
-            val out = File(File(context.cacheDir, "vault").apply { mkdirs() }, entry.id + "_" + entry.name)
-            if (out.exists()) return@runCatching out
-            file(entry.id).inputStream().use { raw ->
-                val ivLen = raw.read()
-                val iv = ByteArray(ivLen).also { raw.read(it) }
-                val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, iv)) }
-                CipherInputStream(raw, cipher).use { dec -> out.outputStream().use { dec.copyTo(it) } }
-            }
+            cache.mkdirs()
+            decrypt(file(entry.id)).use { dec -> part.outputStream().use { dec.copyTo(it) } }
+            check(part.renameTo(out))
             out
-        }.getOrNull()
+        }.getOrElse {
+            part.wipe()
+            null
+        }
     }
 
-    suspend fun thumbnail(entry: VaultEntry, px: Int): Bitmap? = withContext(Dispatchers.IO) {
-        if (entry.mime.startsWith("video/")) return@withContext null
-        val f = open(entry) ?: return@withContext null
-        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(f.path, opts)
-        var sample = 1
-        while (opts.outWidth / (sample * 2) >= px && opts.outHeight / (sample * 2) >= px) sample *= 2
-        BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inSampleSize = sample })
+    /** A photo from the vault, decoded at most [maxEdge] pixels on its longer side, without a plaintext file. */
+    suspend fun image(entry: VaultEntry, maxEdge: Int): Bitmap? = decode(entry) { w, h -> maxEdge.toFloat() / maxOf(w, h) }
+
+    /** A thumbnail whose shorter side is about [px] pixels, cached in memory. */
+    suspend fun thumbnail(entry: VaultEntry, px: Int): Bitmap? {
+        if (entry.mime.startsWith("video/")) return null
+        thumbs.get(entry.id)?.let { return it }
+        return decode(entry) { w, h -> px.toFloat() / minOf(w, h) }?.also { thumbs.put(entry.id, it) }
+    }
+
+    private suspend fun decode(entry: VaultEntry, scale: (Int, Int) -> Float): Bitmap? = withContext(Dispatchers.IO) {
+        decrypting.withPermit {
+            runCatching {
+                val source = if (file(entry.id).length() <= IN_MEMORY_MAX) {
+                    ImageDecoder.createSource(ByteBuffer.wrap(decrypt(file(entry.id)).use { it.readBytes() }))
+                } else {
+                    ImageDecoder.createSource(open(entry) ?: return@runCatching null)
+                }
+                ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                    val s = scale(info.size.width, info.size.height)
+                    if (s < 1f) decoder.setTargetSize((info.size.width * s).toInt().coerceAtLeast(1), (info.size.height * s).toInt().coerceAtLeast(1))
+                }
+            }.getOrNull()
+        }
     }
 
     /** Puts an entry back in the library (Pictures/GalleryCtrl or Movies/GalleryCtrl) and removes it from the vault. */
     suspend fun restore(entry: VaultEntry): Boolean = withContext(Dispatchers.IO) {
-        val f = open(entry) ?: return@withContext false
         val video = entry.mime.startsWith("video/")
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, entry.name)
@@ -191,32 +360,49 @@ class Vault(private val context: Context) {
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val coll = if (video) MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY) else MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-        val uri = context.contentResolver.insert(coll, values) ?: return@withContext false
-        val ok = runCatching { context.contentResolver.openOutputStream(uri)!!.use { o -> f.inputStream().use { it.copyTo(o) } } }.isSuccess
-        if (!ok) { context.contentResolver.delete(uri, null, null); return@withContext false }
+        val uri = runCatching { context.contentResolver.insert(coll, values) }.getOrNull() ?: return@withContext false
+        // Straight from the encrypted file into the library: no plaintext copy on the way.
+        val ok = runCatching {
+            context.contentResolver.openOutputStream(uri)!!.use { o -> decrypt(file(entry.id)).use { it.copyTo(o) } }
+        }.isSuccess
+        if (!ok) { runCatching { context.contentResolver.delete(uri, null, null) }; return@withContext false }
         context.contentResolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
         remove(entry)
         true
     }
 
-    fun remove(entry: VaultEntry) {
-        file(entry.id).delete()
-        File(File(context.cacheDir, "vault"), entry.id + "_" + entry.name).delete()
-        save(_entries.value.filterNot { it.id == entry.id })
+    /** Deletes one entry from the vault for good. */
+    suspend fun remove(entry: VaultEntry) = withContext(Dispatchers.IO) {
+        loaded.await()
+        mutex.withLock {
+            file(entry.id).delete()
+            plainCopy(entry).wipe()
+            thumbs.remove(entry.id)
+            save(_entries.value.filterNot { it.id == entry.id })
+        }
     }
 
-    /** Deletes the decrypted temporary copies. */
+    /** Forgets the thumbnails, and overwrites and deletes the decrypted video copies (off the main thread). */
     fun closeCache() {
-        File(context.cacheDir, "vault").deleteRecursively()
+        thumbs.evictAll()
+        scope.launch(Dispatchers.IO) { cache.wipe() }
     }
 
-    fun deleteAll() {
-        dir.listFiles()?.forEach { it.delete() }
-        closeCache()
-        _entries.value = emptyList()
+    /** Deletes every file in the vault and its key: what's left on the flash can't be decrypted any more. */
+    suspend fun deleteAll() = withContext(Dispatchers.IO) {
+        mutex.withLock {
+            dir.listFiles()?.forEach { it.delete() }
+            closeCache()
+            deleteKey()
+            _entries.value = emptyList()
+        }
     }
 
     companion object {
         private const val ALIAS = "galleryctrl_vault"
+        private const val GCM = "AES/GCM/NoPadding"
+
+        /** Photos up to this size (encrypted) are decrypted in memory; bigger ones go through the cache. */
+        private const val IN_MEMORY_MAX = 64L * 1024 * 1024
     }
 }

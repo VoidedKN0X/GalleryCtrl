@@ -22,8 +22,8 @@ android {
         minSdk = 35
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.2.0"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
     }
@@ -125,4 +125,11 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Photo map: Mapsforge (LGPL-3.0) draws an offline .map file you pick; it never downloads anything.
+    implementation(libs.mapsforge.map.android)
+    implementation(libs.mapsforge.map.reader)
+    implementation(libs.mapsforge.themes)
+
+    testImplementation(libs.junit)
 }

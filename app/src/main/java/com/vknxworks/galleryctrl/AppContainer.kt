@@ -25,6 +25,8 @@ class AppContainer(val context: Context) {
     val media = MediaRepository(context, appScope)
     /** The encrypted private vault for photos and videos. */
     val photoVault = Vault(context, appScope)
+    /** Dates and GPS positions read from the library's photos for On this day and the map (memory only). */
+    val photoInfo = com.vknxworks.galleryctrl.media.PhotoInfo(context)
 
     /** Which tab to open. */
     val openTab = MutableStateFlow<Int?>(null)
@@ -65,6 +67,7 @@ class AppContainer(val context: Context) {
 
     fun onLocked() {
         photoVault.closeCache()
+        photoInfo.clear()
         vault.close()
     }
 

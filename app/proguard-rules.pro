@@ -19,3 +19,10 @@
     public static int d(...);
     public static int i(...);
 }
+
+# Photo map: Mapsforge reads its render theme with XmlPullParser and creates its instructions by name, and draws
+# theme symbols with AndroidSVG; keep both whole.
+-keep class org.mapsforge.** { *; }
+-dontwarn org.mapsforge.**
+-keep class com.caverock.androidsvg.** { *; }
+-dontwarn com.caverock.androidsvg.**

@@ -185,6 +185,8 @@ private fun AppNavHost(navController: NavHostController) {
         composable<VaultRoute> { VaultGate() }
         composable<DuplicatesRoute> { DuplicatesScreen() }
         composable<SearchRoute> { SearchScreen() }
+        composable<OnThisDayRoute> { OnThisDayScreen() }
+        composable<MapRoute> { PhotoMapScreen() }
         composable<YouRoute> { YouScreen() }
         composable<SettingsRoute> { SettingsScreen() }
     }

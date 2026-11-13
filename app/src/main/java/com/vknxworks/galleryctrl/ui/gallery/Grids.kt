@@ -42,6 +42,8 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -85,6 +87,7 @@ import com.vknxworks.galleryctrl.media.Album
 import com.vknxworks.galleryctrl.media.Duplicates
 import com.vknxworks.galleryctrl.media.MediaItem
 import com.vknxworks.galleryctrl.media.MediaRequests
+import com.vknxworks.galleryctrl.media.OnThisDay
 import com.vknxworks.galleryctrl.media.Sharing
 import com.vknxworks.galleryctrl.media.VaultEntry
 import com.vknxworks.galleryctrl.ui.common.hasPermission
@@ -101,6 +104,8 @@ import com.vknxworks.galleryctrl.ui.lock.AppLockGate
 import com.vknxworks.galleryctrl.ui.nav.AlbumRoute
 import com.vknxworks.galleryctrl.ui.nav.DuplicatesRoute
 import com.vknxworks.galleryctrl.ui.nav.LocalNavigator
+import com.vknxworks.galleryctrl.ui.nav.MapRoute
+import com.vknxworks.galleryctrl.ui.nav.OnThisDayRoute
 import com.vknxworks.galleryctrl.ui.nav.SearchRoute
 import com.vknxworks.galleryctrl.ui.nav.VaultRoute
 import com.vknxworks.galleryctrl.ui.nav.ViewerRoute
@@ -209,6 +214,8 @@ fun MediaGrid(
     items: List<MediaItem>,
     modifier: Modifier = Modifier,
     groupByDay: Boolean = true,
+    /** Groups with their own headings (On this day: one per year), instead of grouping by day. */
+    sections: List<Pair<String, List<MediaItem>>>? = null,
     header: (LazyGridScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -237,11 +244,12 @@ fun MediaGrid(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             header?.invoke(this)
-            val groups = if (groupByDay) items.groupBy { dayOf(it.date) }.toList() else listOf(LocalDate.MIN to items)
+            val groups: List<Pair<Any, List<MediaItem>>> = sections
+                ?: if (groupByDay) items.groupBy { dayOf(it.date) }.toList() else listOf(LocalDate.MIN to items)
             groups.forEach { (day, list) ->
-                if (groupByDay) {
+                if (sections != null || groupByDay) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "h$day") {
-                        Text(dayLabel(day), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.padding(start = Gutter, top = 18.dp, bottom = 8.dp))
+                        Text(if (day is LocalDate) dayLabel(day) else day.toString(), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.padding(start = Gutter, top = 18.dp, bottom = 8.dp))
                     }
                 }
                 items(list, key = { it.id }) { item ->
@@ -308,10 +316,7 @@ fun PhotosScreen() {
         val items by c.media.items.collectAsStateWithLifecycle()
         val loading by c.media.loading.collectAsStateWithLifecycle()
         val settings by c.settings.settings.collectAsStateWithLifecycle()
-        val today = LocalDate.now()
-        val memories = remember(items) {
-            items.filter { val d = dayOf(it.date); d.monthValue == today.monthValue && d.dayOfMonth == today.dayOfMonth && d.year < today.year && !it.isVideo }.take(20)
-        }
+        val memories = rememberOnThisDay(items, settings.onThisDay)
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TabTitle(stringResource(R.string.tab_photos)) {
                 CtrlSquareButton(Icons.Outlined.Search, stringResource(R.string.search), { nav.navigate(SearchRoute) })
@@ -342,7 +347,7 @@ fun PhotosScreen() {
                         }
                     }
                     if (settings.onThisDay && memories.isNotEmpty()) {
-                        item(span = { GridItemSpan(maxLineSpan) }, key = "memories") { Memories(memories) }
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "memories") { Memories(memories) { nav.navigate(OnThisDayRoute) } }
                     }
                 }
             }
@@ -350,14 +355,41 @@ fun PhotosScreen() {
     }
 }
 
+/**
+ * Today's memories (photos and videos from this date in earlier years, each by the day it was taken where it was
+ * taken), worked out off the main thread and again when the library or the date changes.
+ */
 @Composable
-private fun Memories(items: List<MediaItem>) {
+fun rememberOnThisDay(items: List<MediaItem>, enabled: Boolean = true): List<Pair<MediaItem, LocalDate>> {
+    val c = LocalContext.current.container
+    var tick by remember { mutableIntStateOf(0) }
+    // Coming back the next morning shows the new day.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { tick++ }
+    val today = remember(tick) { LocalDate.now() }
+    val result by produceState(emptyList<Pair<MediaItem, LocalDate>>(), items, today, enabled) {
+        value = if (enabled) c.photoInfo.onThisDay(items, today) else emptyList()
+    }
+    return result
+}
+
+/** The "On this day" row at the top of Photos: up to 20 memories, and See all for the rest. */
+@Composable
+private fun Memories(memories: List<Pair<MediaItem, LocalDate>>, onSeeAll: () -> Unit) {
     val c = LocalContext.current.container
     val nav = LocalNavigator.current
+    val today = LocalDate.now()
+    val shown = memories.take(20)
+    val items = shown.map { it.first }
     Column(Modifier.padding(top = 8.dp)) {
-        SectionLabel(stringResource(R.string.on_this_day), Modifier.padding(start = Gutter, bottom = 8.dp))
+        Row(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(stringResource(R.string.on_this_day), Modifier.weight(1f))
+            Text(
+                stringResource(R.string.see_all), style = CtrlType.Status, color = CtrlColors.AccentText,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onSeeAll).padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+        }
         LazyRow(contentPadding = PaddingValues(horizontal = Gutter), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            rowItems(items, key = { it.id }) { item ->
+            rowItems(shown, key = { it.first.id }) { (item, day) ->
                 Box(Modifier.size(132.dp, 176.dp).clip(RoundedCornerShape(18.dp)).clickable {
                     c.viewerList.value = items
                     c.viewerStart.value = items.indexOf(item)
@@ -365,14 +397,37 @@ private fun Memories(items: List<MediaItem>) {
                     nav.navigate(ViewerRoute)
                 }) {
                     Thumb(item, 384, Modifier.fillMaxSize())
+                    val years = OnThisDay.yearsAgo(day, today)
                     Text(
-                        stringResource(R.string.years_ago, LocalDate.now().year - dayOf(item.date).year),
+                        pluralStringResource(R.plurals.years_ago_count, years, years),
                         style = CtrlType.LabelStrong, color = Color.White,
                         modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
                     )
                 }
             }
         }
+    }
+}
+
+/** On this day as a page: every memory for today, grouped by year, newest first. */
+@Composable
+fun OnThisDayScreen() {
+    val c = LocalContext.current.container
+    val items by c.media.items.collectAsStateWithLifecycle()
+    val memories = rememberOnThisDay(items)
+    val today = LocalDate.now()
+    val fmt = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
+    val sections = remember(memories) {
+        memories.groupBy { it.second.year }.map { (_, list) ->
+            val day = list.first().second
+            val years = OnThisDay.yearsAgo(day, today)
+            "${day.format(fmt)} · ${c.context.resources.getQuantityString(R.plurals.years_ago_lower, years, years)}" to list.map { it.first }
+        }
+    }
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar(stringResource(R.string.on_this_day_title))
+        if (memories.isEmpty()) MessageView(Icons.Outlined.History, stringResource(R.string.on_this_day_empty), stringResource(R.string.on_this_day_empty_body))
+        else MediaGrid(memories.map { it.first }, Modifier.weight(1f).navigationBarsPadding(), sections = sections)
     }
 }
 
@@ -398,6 +453,8 @@ fun AlbumsScreen() {
                         CollectionRow(Icons.Outlined.Videocam, stringResource(R.string.videos), items.count { it.isVideo }) { nav.navigate(AlbumRoute("videos")) }
                         CollectionRow(Icons.Outlined.Lock, stringResource(R.string.vault), vault.size) { nav.navigate(VaultRoute) }
                         CollectionRow(Icons.Outlined.ContentCopy, stringResource(R.string.duplicates), null) { nav.navigate(DuplicatesRoute) }
+                        CollectionRow(Icons.Outlined.Map, stringResource(R.string.map), null) { nav.navigate(MapRoute) }
+                        CollectionRow(Icons.Outlined.History, stringResource(R.string.on_this_day_title), null) { nav.navigate(OnThisDayRoute) }
                         Spacer(Modifier.height(12.dp))
                         SectionLabel(stringResource(R.string.folders))
                         Spacer(Modifier.height(8.dp))

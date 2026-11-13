@@ -1,9 +1,30 @@
-﻿# Changelog
+# Changelog
 
 What changed in each GalleryCtrl release. Every release on the [Releases page](https://github.com/VoidedKN0X/GalleryCtrl/releases) also lists the exact changes in that build.
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.2.0 (2026-11-13)
+
+On this day gets its own page and includes videos, and there's a new offline photo map.
+
+### New
+
+- **On this day, as a page.** *See all* next to the On this day row at the top of Photos, or **Albums > On this day**, shows every photo and video from today's date in earlier years, grouped by year with how long ago it was.
+- **Videos in On this day.** Videos from this date in earlier years now show too, not only photos.
+- **Photo map.** **Albums > Map** shows your photos that have a GPS location as pins. Pins close together are grouped into a numbered circle that splits up as you zoom in; tap a pin to see its photos and open them in the viewer. Pinch to zoom, drag to move, double-tap to zoom in.
+- **Works without internet.** Out of the box the map is a simple world map with country outlines (Natural Earth), built into the app. For streets and places, download a Mapsforge `.map` file for your region (for example from download.mapsforge.org, the same maps MapsCtrl uses) and pick it with the layers button > *Choose a map file*. GalleryCtrl reads it where it is and never downloads anything; *Use the simple map* switches back.
+
+### Changed
+
+- **On this day uses the day the photo was taken where it was taken.** A photo from 23:30 on a holiday in New York counts for that day, even though it was already the next morning at home. GalleryCtrl uses the camera's own clock (or the time zone stored in the photo) when it has one.
+- **Leap days:** photos from 29 February show on 28 February in years without a 29 February.
+- "1 year ago" instead of "1 years ago" on the On this day row.
+
+### Privacy
+
+- The map only shows photos from your library that already have a location; vault items never appear. Locations are read on the phone, kept in memory only and forgotten when the app locks; GalleryCtrl never saves or sends them. "Remove location when sharing" still applies to everything you share from the map or On this day.
+- GalleryCtrl still has no internet permission. *Where to get map files* opens download.mapsforge.org in your browser, only when you tap it.
 ## v0.1.1 (2026-11-13)
 
 A security and privacy update for the vault and for sharing.

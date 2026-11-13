@@ -13,7 +13,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ## Features
 
 - **Works fully offline.** GalleryCtrl doesn't have the internet permission and never goes online
-- **Photos tab:** everything newest first, grouped by day, with 2 to 6 columns, and **On this day** (photos from this date in earlier years)
+- **Photos tab:** everything newest first, grouped by day, with 2 to 6 columns
+- **On this day:** photos and videos from this date in earlier years, as a row at the top of Photos and as a page of their own (Albums > On this day), grouped by year. A photo counts on the day it was taken where it was taken, using the camera's own clock, so holiday photos from another time zone land on the right day; photos from 29 February show on 28 February in other years
+- **Photo map:** your photos with a GPS location as pins on a map, grouped into numbered clusters that split as you zoom in; tap one to see its photos. Fully offline: without a map file it shows a simple world map with country outlines, and with a Mapsforge `.map` file you pick (for example from download.mapsforge.org, the maps MapsCtrl uses) it shows streets and places. Only photos in your library appear, never vault items
 - **Albums tab:** every folder, plus Favourites, Videos, the Vault and Duplicates
 - **Viewer:** swipe between photos, pinch or double-tap to zoom (very large photos, up to 200 MP, load sharper as you zoom), and Ultra HDR photos shown in HDR on HDR screens
 - **Video playback** with Android's own player controls
@@ -51,6 +53,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Select:** long-press a photo, tap more, then use the bar at the bottom.
 - **Vault:** select photos and tap the lock. Open it from **Albums > Vault**. Android asks you to confirm removing the originals from your library.
 - **Duplicates:** **Albums > Duplicates** compares your photos on the phone; **Keep best** deletes the others in that group.
+- **Map:** **Albums > Map**. For streets and places, download a Mapsforge `.map` file for your region from download.mapsforge.org in your browser, then tap the layers button on the map and **Choose a map file**. GalleryCtrl reads the file where it is and never goes online.
 - **Settings** (profile picture): grid size, On this day, slideshow speed, location removal when sharing, the vault PIN and privacy.
 
 ## Is it safe to install?
@@ -101,6 +104,8 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 **Telemetry-free.** GalleryCtrl has no analytics, crash reporting, usage stats or tracking of any kind. It has **no internet permission**, works fully offline and never connects to the internet. Every build checks that the app has no network permission and no Google libraries.
 
 - Your photos are read in place. GalleryCtrl keeps no copy, index or thumbnails of its own outside Android's thumbnail store; the duplicate finder works in memory.
+- **Locations stay on the phone.** The map and On this day read dates and GPS positions from your photos on the phone and keep them in memory only; nothing about where your photos were taken is saved by GalleryCtrl or sent anywhere. A photo's location is only shown where the photo already has one, and "Remove location when sharing" still applies to everything you share from the map or On this day. Vault items never appear on the map.
+- **Maps are offline.** GalleryCtrl has no internet permission and talks to no tile server. The map file you pick is read in place (Android remembers only your permission to read it); "Where to get map files" opens download.mapsforge.org in your browser, only when you tap it.
 - No cloud sync, face recognition service, AI eraser or anything else that sends photos away.
 - Shared copies have their location removed by default (GPS tags, and XMP data that carries a position) and are deleted from GalleryCtrl's cache the next time it starts. Each copy is checked: a photo whose location can't be removed isn't shared while this setting is on.
 - The vault and settings are in GalleryCtrl's private storage. Android backups don't include them, and GalleryCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
@@ -181,5 +186,7 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 ## License
 
 GalleryCtrl is licensed under the [GNU General Public License v3.0](LICENSE). © VKNXWorks
+
+The photo map uses [Mapsforge](https://github.com/mapsforge/mapsforge) (LGPL-3.0) with [AndroidSVG](https://github.com/BigBadaboom/androidsvg) (Apache-2.0), and country outlines from [Natural Earth](https://www.naturalearthdata.com/) (1:110m countries, public domain).
 
 Fonts, bundled in the app (nothing is downloaded): [Space Grotesk](https://github.com/floriankarsten/space-grotesk) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono), both under the SIL Open Font License 1.1 ([FONT-LICENSE-SpaceGrotesk.txt](FONT-LICENSE-SpaceGrotesk.txt), [FONT-LICENSE-JetBrainsMono.txt](FONT-LICENSE-JetBrainsMono.txt)).

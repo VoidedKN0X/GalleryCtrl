@@ -16,6 +16,8 @@ Built and checked by CI only: nothing here has been run on a phone.
   - *Looking again.* After **Keep best** the list is worked out again. The fingerprints of photos already looked at are now remembered, so that takes a moment instead of reading every thumbnail again. They are kept in memory only, never written to storage, dropped for photos that are gone or changed, and forgotten when the app locks or closes.
 - **The duplicate finder no longer empties the grid's thumbnail memory.** It used to put a small thumbnail of every photo in the same memory the grids use, pushing out the thumbnails you had been looking at, so the Photos tab had to load them again afterwards. Its thumbnails are now used once and freed straight away.
 
+- **On this day shows up sooner the first time.** To know on which day a photo was taken where it was taken, GalleryCtrl reads the date inside the photo file, for the photos from around today's date in earlier years. It used to read them one after the other; it now reads 4 at a time. Which photos are shown, and in which order, is unchanged.
+
 ## v0.3.0 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

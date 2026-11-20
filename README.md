@@ -22,7 +22,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Info:** date, size and resolution, folder, camera, lens, exposure and the photo's location (shown on the phone only)
 - **Search** by file name, folder or date ("june 2024", "12 november")
 - **Select several** with a long-press: share, favourite, delete or move to the vault
-- **Share without your location:** the shared copy has its GPS position removed (on by default); your original keeps it
+- **Share without your location:** the shared copy has its GPS position removed (on by default); your original keeps it. Works for JPEG, WebP, PNG and HEIC photos and for MP4, MOV and 3GP videos; anything whose location can't be removed or ruled out isn't shared, and GalleryCtrl says so
 - **Edit** in [LumenCtrl](https://github.com/VoidedKN0X/LumenCtrl) if it's installed, otherwise in any editor you choose
 - **Set as** wallpaper or contact photo, and **slideshows** of any album (2, 4 or 8 seconds per photo)
 - **Duplicate finder:** near-identical photos (bursts, re-saved copies) found on the phone by comparing structure and colour; keep the best and delete the rest
@@ -107,7 +107,12 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - **Locations stay on the phone.** The map and On this day read dates and GPS positions from your photos on the phone and keep them in memory only; nothing about where your photos were taken is saved by GalleryCtrl or sent anywhere. A photo's location is only shown where the photo already has one, and "Remove location when sharing" still applies to everything you share from the map or On this day. Vault items never appear on the map.
 - **Maps are offline.** GalleryCtrl has no internet permission and talks to no tile server. The map file you pick is read in place (Android remembers only your permission to read it); "Where to get map files" opens download.mapsforge.org in your browser, only when you tap it.
 - No cloud sync, face recognition service, AI eraser or anything else that sends photos away.
-- Shared copies have their location removed by default (GPS tags, and XMP data that carries a position) and are deleted from GalleryCtrl's cache the next time it starts. Each copy is checked: a photo whose location can't be removed isn't shared while this setting is on.
+- Shared copies have their location removed by default and are deleted from GalleryCtrl's cache the next time it starts. While "Remove location when sharing" is on, nothing is shared unless GalleryCtrl could remove its location or found none:
+  - **JPEG, WebP, PNG and HEIC/HEIF photos:** the GPS tags, and XMP data that carries a position, are removed from the copy, and the copy is checked.
+  - **MP4, MOV and 3GP videos:** the copy is rewritten without the location. The picture and sound are copied as they are (no re-encoding, so no quality loss) and the rotation is kept, but a rewrite drops everything else stored in the file too: the recording date, camera details, titles and extra data tracks. A MOV or 3GP is shared as an MP4. The copy is checked afterwards. This rewrite has not been tested on a phone yet; if a video can't be rewritten (an unusual codec, subtitles, a damaged file), it's treated like "other file types" below.
+  - **Other file types** (AVIF, DNG and RAW photos, GIFs): can't be rewritten, so an exact copy is shared only when GalleryCtrl can read the file and finds no location in it. Formats it can't read well enough to be sure (JPEG XL, Canon CR3, MKV and WebM videos, AVIF or RAW files without camera details) are never shared while the setting is on.
+  - **Anything else isn't shared,** and a message says how many photos, videos or files were left out. The rest of your selection is still shared. Turn the setting off to share those items as they are.
+  - The check looks for the standard places a location is kept. A position that a camera hides in its own private format (or prints into the picture) isn't recognised.
 - The vault and settings are in GalleryCtrl's private storage. Android backups don't include them, and GalleryCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
 - The Support, Report a bug, Source code and Licence links on the You page open in your browser, only when you tap them.
 

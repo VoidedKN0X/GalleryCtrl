@@ -7,6 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
+import android.media.MediaMuxer
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -35,6 +40,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.UUID
@@ -61,18 +67,30 @@ object MediaRequests {
 /** Sharing: by default the shared copy has its location removed. */
 object Sharing {
     /**
-     * Shares [items]. With [stripLocation], photos are copied (off the main thread) with their location removed;
-     * a photo whose location can't be removed is left out rather than shared with it, and a message says so.
+     * Shares [items]. With [stripLocation], every item is replaced (off the main thread) by a copy in the share
+     * cache that has no location, see [strippedCopy]. An item whose location can't be removed, or can't be ruled
+     * out, is left out rather than shared with it, and a message says how many photos, videos and other files
+     * were left out. Without [stripLocation] the originals are shared exactly as they are.
      */
     fun share(context: Context, items: List<MediaItem>, stripLocation: Boolean) {
         val app = context.applicationContext
         app.container.appScope.launch {
-            val uris = withContext(Dispatchers.IO) {
-                if (stripLocation) items.mapNotNull { strippedCopy(app, it) } else items.map { it.uri }
+            // Rewriting a video can take a while and nothing else shows on screen meanwhile.
+            if (stripLocation && items.any { it.isVideo }) {
+                Toast.makeText(app, R.string.share_removing_video_location, Toast.LENGTH_SHORT).show()
             }
-            val left = items.size - uris.size
-            if (left > 0) {
-                Toast.makeText(app, app.resources.getQuantityString(R.plurals.share_location_not_removed, left, left), Toast.LENGTH_LONG).show()
+            val copies: List<Uri?> = withContext(Dispatchers.IO) {
+                if (stripLocation) items.map { strippedCopy(app, it) } else items.map { it.uri }
+            }
+            val uris = copies.filterNotNull()
+            if (uris.size < items.size) {
+                val left = items.filterIndexed { i, _ -> copies[i] == null }
+                val videos = left.count { it.isVideo }
+                val photos = left.count { !it.isVideo && it.mime in REWRITABLE_PHOTOS }
+                val others = left.size - videos - photos
+                if (photos > 0) Toast.makeText(app, app.resources.getQuantityString(R.plurals.share_location_not_removed, photos, photos), Toast.LENGTH_LONG).show()
+                if (videos > 0) Toast.makeText(app, app.resources.getQuantityString(R.plurals.share_video_location_not_removed, videos, videos), Toast.LENGTH_LONG).show()
+                if (others > 0) Toast.makeText(app, app.resources.getQuantityString(R.plurals.share_type_location_not_removed, others, others), Toast.LENGTH_LONG).show()
             }
             if (uris.isEmpty()) return@launch
             val intent = if (uris.size == 1) {
@@ -88,15 +106,42 @@ object Sharing {
     }
 
     /**
-     * Copies a photo into the share cache and removes its location (GPS tags, and XMP that carries a position).
-     * The copy is checked afterwards: if the location is still there (a format Android can't rewrite), null is
-     * returned so the photo isn't shared. Videos and other formats are shared as they are.
+     * A copy of [item] in the share cache that carries no location, or null when that can't be done. It never
+     * returns the original: null means "don't share this item".
+     *
+     * - JPEG, WebP, PNG, HEIC and HEIF photos: the copy's GPS tags (and XMP that carries a position) are removed
+     *   and the copy is checked afterwards.
+     * - MP4, MOV and 3GP videos: the copy is rewritten without the location ([remuxedVideo]) and checked.
+     * - Everything else (other video containers, AVIF, RAW/DNG, GIF, JPEG XL...) can't be rewritten. An exact copy
+     *   is shared only when [carriesNoLocation] can tell that the file has no location in it; when it finds one,
+     *   or can't read the format well enough to be sure, the item isn't shared. That is also what happens to an
+     *   MP4/MOV/3GP video that can't be rewritten.
      */
-    private fun strippedCopy(context: Context, item: MediaItem): Uri? {
-        if (item.mime !in setOf("image/jpeg", "image/webp", "image/png", "image/heic", "image/heif")) return item.uri
+    private fun strippedCopy(context: Context, item: MediaItem): Uri? = when {
+        item.mime in REWRITABLE_PHOTOS -> rewrittenPhoto(context, item)
+        item.isVideo -> remuxedVideo(context, item) ?: checkedCopy(context, item, "video")
+        else -> checkedCopy(context, item, "file")
+    }
+
+    /** A fresh folder per copy, and only a safe file name (the name comes from the media store). */
+    private fun shareFile(context: Context, name: String, fallback: String): File {
         val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        // A fresh folder per copy, and only a safe file name (the name comes from the media store).
-        val out = File(File(dir, UUID.randomUUID().toString()).apply { mkdirs() }, safeName(item.name, "photo.jpg"))
+        return File(File(dir, UUID.randomUUID().toString()).apply { mkdirs() }, safeName(name, fallback))
+    }
+
+    private fun shareUri(context: Context, file: File): Uri =
+        FileProvider.getUriForFile(context, context.packageName + ".files", file)
+
+    /** True when the share cache has room for a copy of [item] (with a little to spare). */
+    private fun hasRoomFor(context: Context, item: MediaItem): Boolean =
+        File(context.cacheDir, "share").apply { mkdirs() }.usableSpace > item.size + 32L * 1024 * 1024
+
+    /**
+     * Copies a photo into the share cache and removes its location (GPS tags, and XMP that carries a position).
+     * The copy is checked afterwards: if the location is still there, null is returned so the photo isn't shared.
+     */
+    private fun rewrittenPhoto(context: Context, item: MediaItem): Uri? {
+        val out = shareFile(context, item.name, "photo.jpg")
         return runCatching {
             context.contentResolver.openInputStream(item.uri)!!.use { input -> out.outputStream().use { input.copyTo(it) } }
             val exif = ExifInterface(out)
@@ -105,11 +150,264 @@ object Sharing {
             exif.saveAttributes()
             val check = ExifInterface(out)
             check(check.latLong == null && LOCATION_TAGS.none { check.getAttribute(it) != null })
-            FileProvider.getUriForFile(context, context.packageName + ".files", out)
+            shareUri(context, out)
         }.getOrElse {
             out.delete()
             null
         }
+    }
+
+    /**
+     * An exact copy of [item] in the share cache, but only if the copy can be shown to carry no location
+     * ([carriesNoLocation]); otherwise null. The copy (not the original) is what gets checked and shared, so the
+     * check is about exactly the bytes the other app receives.
+     */
+    private fun checkedCopy(context: Context, item: MediaItem, fallback: String): Uri? {
+        // No point copying a file that carriesNoLocation can never clear.
+        if (item.mime !in ISO_VIDEOS && item.mime !in EXIF_READABLE && item.mime != "image/gif") return null
+        if (!hasRoomFor(context, item)) return null
+        val out = shareFile(context, item.name, fallback)
+        return runCatching {
+            context.contentResolver.openInputStream(item.uri)!!.use { input -> out.outputStream().use { input.copyTo(it) } }
+            check(carriesNoLocation(out, item.mime))
+            shareUri(context, out)
+        }.getOrElse {
+            out.delete()
+            null
+        }
+    }
+
+    /**
+     * Whether [file] can be shown to have no location in it. False also means "can't tell": only formats whose
+     * metadata can really be read here are ever answered with true.
+     *
+     * - MP4/MOV/3GP: Android reports no location, and none of the boxes outside the picture and sound data holds
+     *   a known location entry or XMP position ([isoBoxesClean]).
+     * - AVIF, DNG and the RAW formats ExifInterface reads: the EXIF block was really read (it names a camera,
+     *   program or capture date; a file without any of those counts as "can't tell"), it has no GPS tags, and
+     *   there's no XMP position anywhere in the file.
+     * - GIF: has no EXIF; the only place for a position is XMP, which is searched for.
+     * - Anything else (JPEG XL, MKV, WebM, Canon CR3...): can't be read here, so false.
+     *
+     * Limits, to be honest about them: a position a camera stores in its own private format (a maker note, a
+     * telemetry or subtitle track, or data inside the video stream itself) isn't recognised.
+     */
+    private fun carriesNoLocation(file: File, mime: String): Boolean = runCatching {
+        when (mime) {
+            in ISO_VIDEOS -> {
+                // A null from videoFacts means Android couldn't read the file at all: can't tell.
+                val facts = videoFacts { it.setDataSource(file.path) }
+                facts != null && facts.location.isNullOrBlank() && isoBoxesClean(file)
+            }
+            in EXIF_READABLE -> {
+                val exif = ExifInterface(file)
+                EXIF_WAS_READ.any { exif.getAttribute(it) != null } &&
+                    exif.latLong == null && LOCATION_TAGS.none { exif.getAttribute(it) != null } &&
+                    exif.getAttribute(ExifInterface.TAG_XMP)?.contains("GPS", ignoreCase = true) != true &&
+                    !fileContains(file, XMP_POSITION)
+            }
+            "image/gif" -> !fileContains(file, XMP_POSITION)
+            else -> false
+        }
+    }.getOrDefault(false)
+
+    private class VideoFacts(val location: String?, val rotation: Int, val hasVideo: Boolean)
+
+    /** What Android's own reader says about a video; null when it can't read it. */
+    private fun videoFacts(open: (MediaMetadataRetriever) -> Unit): VideoFacts? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            open(retriever)
+            VideoFacts(
+                location = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION),
+                rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0,
+                hasVideo = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes",
+            )
+        } catch (e: Exception) {
+            null
+        } finally {
+            runCatching { retriever.release() }
+        }
+    }
+
+    /**
+     * Rewrites an MP4, MOV or 3GP video into a new MP4 in the share cache without its location, or returns null
+     * when that can't be done (then nothing of it is left in the cache).
+     *
+     * How: the platform MediaExtractor reads the picture and sound tracks and MediaMuxer writes the very same
+     * compressed samples into a new file. Nothing is decoded or re-encoded, so the quality is untouched. The
+     * muxer only writes a location when `setLocation` is called, and it never is. The rotation is carried over.
+     *
+     * What else is lost, because a rewrite builds a new container: every other piece of container metadata (the
+     * recording date becomes "now", camera make/model, titles, XMP, chapter and edit lists) and data tracks
+     * (`application/...`: motion or sensor data, which can hold positions too). A MOV or 3GP comes out as an MP4.
+     *
+     * Anything unexpected means "could not strip": a track that is neither picture, sound nor data (subtitles),
+     * a codec the muxer refuses, encrypted or partial samples, any exception, and a result that fails the check
+     * at the end (Android still reports a location, a location box is found, the rotation changed, the picture
+     * is gone, or the file is shorter than what was written).
+     *
+     * NOT TESTED ON A DEVICE: this was written and compiled by CI only. Whether every phone's recordings
+     * (Dolby Vision, HDR10+, slow motion, spatial audio) go through the muxer and play correctly afterwards has
+     * not been tried. A recording the muxer refuses falls back to [checkedCopy], so it's shared only if it had
+     * no location to begin with.
+     */
+    private fun remuxedVideo(context: Context, item: MediaItem): Uri? {
+        if (item.mime !in ISO_VIDEOS || !hasRoomFor(context, item)) return null
+        val source = videoFacts { it.setDataSource(context, item.uri) } ?: return null
+        if (source.rotation !in setOf(0, 90, 180, 270)) return null
+        val out = shareFile(context, item.name, "video.mp4").let { File(it.parentFile, it.name.substringBeforeLast('.', it.name) + ".mp4") }
+        val written = copyTracks(context, item.uri, out, source.rotation)
+        val ok = written > 0 && runCatching {
+            val copy = videoFacts { it.setDataSource(out.path) }
+            copy != null && copy.location.isNullOrBlank() && copy.rotation == source.rotation &&
+                copy.hasVideo == source.hasVideo && out.length() >= written && isoBoxesClean(out)
+        }.getOrDefault(false)
+        if (!ok) {
+            out.delete()
+            return null
+        }
+        return runCatching { shareUri(context, out) }.getOrElse {
+            out.delete()
+            null
+        }
+    }
+
+    /**
+     * Copies the picture and sound samples of [uri] into a new MP4 at [out], unchanged. Returns the number of
+     * sample bytes written, or -1 when the video can't be copied this way (see [remuxedVideo]).
+     */
+    private fun copyTracks(context: Context, uri: Uri, out: File, rotation: Int): Long {
+        val extractor = MediaExtractor()
+        var muxer: MediaMuxer? = null
+        return try {
+            extractor.setDataSource(context, uri, null)
+            val target = MediaMuxer(out.path, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            muxer = target
+            val outTrack = IntArray(extractor.trackCount) { -1 }
+            var bufferSize = 1024 * 1024
+            var tracks = 0
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: return -1L
+                if (mime.startsWith("video/") || mime.startsWith("audio/")) {
+                    if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+                        bufferSize = maxOf(bufferSize, format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE))
+                    }
+                    // Throws for a codec the MP4 muxer can't write: caught below, the video isn't rewritten.
+                    outTrack[i] = target.addTrack(format)
+                    extractor.selectTrack(i)
+                    tracks++
+                } else if (!mime.startsWith("application/")) {
+                    // Subtitles and the like: the muxer can't carry them and dropping them unasked would change the video.
+                    return -1L
+                }
+                // application/...: a data track (motion, sensors). Left out on purpose, it may hold positions.
+            }
+            if (tracks == 0 || bufferSize > MAX_SAMPLE_BYTES) return -1L
+            target.setOrientationHint(rotation)
+            target.start()
+            var buffer = ByteBuffer.allocate(bufferSize)
+            val info = MediaCodec.BufferInfo()
+            var written = 0L
+            while (true) {
+                val track = extractor.sampleTrackIndex
+                if (track < 0) break
+                if (outTrack[track] < 0) return -1L
+                val size = extractor.sampleSize
+                if (size > MAX_SAMPLE_BYTES) return -1L
+                if (size > buffer.capacity()) buffer = ByteBuffer.allocate(size.toInt())
+                buffer.clear()
+                val read = extractor.readSampleData(buffer, 0)
+                if (read < 0) break
+                val flags = extractor.sampleFlags
+                if (flags and (MediaExtractor.SAMPLE_FLAG_ENCRYPTED or MediaExtractor.SAMPLE_FLAG_PARTIAL_FRAME) != 0) return -1L
+                val key = if (flags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0
+                info.set(0, read, extractor.sampleTime, key)
+                target.writeSampleData(outTrack[track], buffer, info)
+                written += read
+                if (!extractor.advance()) break
+            }
+            // stop() writes the index; it throws when the file couldn't be finished.
+            target.stop()
+            written
+        } catch (e: Exception) {
+            -1L
+        } finally {
+            runCatching { muxer?.release() }
+            runCatching { extractor.release() }
+        }
+    }
+
+    /**
+     * Walks the top-level boxes of an MP4/MOV/3GP file and searches everything except the picture and sound data
+     * (`mdat`) for the known places a position is kept: the `©xyz`, `loci`, `gps ` and `gps0` boxes, Apple's
+     * `com.apple.quicktime.location...` keys and an XMP position. True only if the whole file was walked and
+     * nothing was found; a file whose boxes don't add up is "can't tell", so false.
+     */
+    private fun isoBoxesClean(file: File): Boolean = runCatching {
+        RandomAccessFile(file, "r").use { raf ->
+            val length = raf.length()
+            val head = ByteArray(16)
+            var pos = 0L
+            var boxes = 0
+            while (pos < length) {
+                check(pos + 8 <= length)
+                raf.seek(pos)
+                raf.readFully(head, 0, 8)
+                var size = (0 until 4).fold(0L) { acc, i -> (acc shl 8) or (head[i].toLong() and 0xffL) }
+                var header = 8L
+                if (size == 1L) {
+                    check(pos + 16 <= length)
+                    raf.readFully(head, 8, 8)
+                    size = (8 until 16).fold(0L) { acc, i -> (acc shl 8) or (head[i].toLong() and 0xffL) }
+                    header = 16L
+                } else if (size == 0L) {
+                    size = length - pos
+                }
+                check(size >= header && size <= length - pos)
+                val isMediaData = head[4] == 'm'.code.toByte() && head[5] == 'd'.code.toByte() &&
+                    head[6] == 'a'.code.toByte() && head[7] == 't'.code.toByte()
+                if (!isMediaData && regionContains(raf, size - header, ISO_LOCATION)) return@use false
+                pos += size
+                boxes++
+            }
+            boxes > 0
+        }
+    }.getOrDefault(false)
+
+    /** Whether any of [patterns] occurs anywhere in [file]. Throws when the file can't be read. */
+    private fun fileContains(file: File, patterns: List<ByteArray>): Boolean =
+        RandomAccessFile(file, "r").use { raf -> regionContains(raf, raf.length(), patterns) }
+
+    /** Whether any of [patterns] occurs in the next [length] bytes of [raf]. Throws when they can't all be read. */
+    private fun regionContains(raf: RandomAccessFile, length: Long, patterns: List<ByteArray>): Boolean {
+        val keep = patterns.maxOf { it.size } - 1
+        val buf = ByteArray(64 * 1024 + keep)
+        var carried = 0
+        var left = length
+        while (left > 0) {
+            val n = raf.read(buf, carried, minOf(left, (buf.size - carried).toLong()).toInt())
+            check(n > 0)
+            val filled = carried + n
+            for (pattern in patterns) {
+                val last = filled - pattern.size
+                var i = 0
+                while (i <= last) {
+                    if (buf[i] == pattern[0]) {
+                        var j = 1
+                        while (j < pattern.size && buf[i + j] == pattern[j]) j++
+                        if (j == pattern.size) return true
+                    }
+                    i++
+                }
+            }
+            // Keep the tail, so a pattern that straddles two reads is still found.
+            carried = minOf(keep, filled)
+            System.arraycopy(buf, filled - carried, buf, 0, carried)
+            left -= n
+        }
+        return false
     }
 
     /** A file name without folders or odd characters, so it can't point outside the share cache. */
@@ -127,6 +425,33 @@ object Sharing {
         ExifInterface.TAG_GPS_SPEED, ExifInterface.TAG_GPS_TRACK, ExifInterface.TAG_GPS_IMG_DIRECTION,
     )
 
+    /** Photo formats whose metadata can be rewritten, so the location is removed from the copy. */
+    private val REWRITABLE_PHOTOS = setOf("image/jpeg", "image/webp", "image/png", "image/heic", "image/heif")
+
+    /** Video containers built from ISO boxes: these can be rewritten by the muxer and searched for location boxes. */
+    private val ISO_VIDEOS = setOf("video/mp4", "video/quicktime", "video/3gpp", "video/3gpp2")
+
+    /** Formats ExifInterface can read but not rewrite. */
+    private val EXIF_READABLE = setOf(
+        "image/avif", "image/x-adobe-dng", "image/x-canon-cr2", "image/x-nikon-nef", "image/x-nikon-nrw",
+        "image/x-sony-arw", "image/x-panasonic-rw2", "image/x-olympus-orf", "image/x-pentax-pef",
+        "image/x-samsung-srw", "image/x-fuji-raf",
+    )
+
+    /** Tags ExifInterface never fills in by itself: one of them being there shows the EXIF block was really read. */
+    private val EXIF_WAS_READ = listOf(
+        ExifInterface.TAG_MAKE, ExifInterface.TAG_MODEL, ExifInterface.TAG_SOFTWARE, ExifInterface.TAG_DATETIME_ORIGINAL,
+    )
+
+    /** How an XMP packet names a position (`exif:GPSLatitude` and the like). */
+    private val XMP_POSITION = listOf(":GPS".toByteArray(Charsets.ISO_8859_1))
+
+    /** Where MP4/MOV/3GP files keep a position: `©xyz`, `loci`, `gps `, `gps0`, Apple's keys, XMP. */
+    private val ISO_LOCATION = listOf("\u00A9xyz", "loci", "gps ", "gps0", "quicktime.location", ":GPS").map { it.toByteArray(Charsets.ISO_8859_1) }
+
+    /** No single sample is anywhere near this big; a larger one means a broken file. */
+    private const val MAX_SAMPLE_BYTES = 64L * 1024 * 1024
+
     fun clearCache(context: Context) {
         File(context.cacheDir, "share").deleteRecursively()
     }
@@ -138,7 +463,7 @@ internal fun File.wipe() {
         listFiles()?.forEach { it.wipe() }
     } else if (isFile) {
         runCatching {
-            java.io.RandomAccessFile(this, "rw").use { raf ->
+            RandomAccessFile(this, "rw").use { raf ->
                 val zeros = ByteArray(64 * 1024)
                 var left = raf.length()
                 raf.seek(0)

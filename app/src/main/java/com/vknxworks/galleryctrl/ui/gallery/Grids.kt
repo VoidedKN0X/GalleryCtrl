@@ -278,7 +278,7 @@ fun MediaGrid(
             SelectionBar(
                 count = sel.size,
                 modifier = Modifier.align(Alignment.BottomCenter).bottomClearance(8.dp),
-                onShare = { Sharing.share(context, sel, settings.stripLocation) },
+                onShare = { Sharing.share(context, sel) },
                 onFavorite = { request(MediaRequests.favorite(context, sel, !sel.all { it.favorite })) },
                 onDelete = { request(MediaRequests.delete(context, sel)) },
                 onVault = {

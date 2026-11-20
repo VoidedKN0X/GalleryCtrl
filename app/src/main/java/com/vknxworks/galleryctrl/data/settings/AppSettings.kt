@@ -38,8 +38,6 @@ enum class SlideInterval(@StringRes val label: Int, val seconds: Int) {
 
 data class AppSettings(
     val columns: Int = 4,
-    /** Remove GPS location from photos you share (the original keeps it). */
-    val stripLocation: Boolean = true,
     val onThisDay: Boolean = true,
     val slideInterval: SlideInterval = SlideInterval.S4,
     /** The vault asks for the app PIN (when the app lock is on). */
@@ -54,7 +52,6 @@ data class AppSettings(
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     private object K {
         val columns = intPreferencesKey("columns")
-        val stripLocation = booleanPreferencesKey("strip_location")
         val onThisDay = booleanPreferencesKey("on_this_day")
         val slideInterval = stringPreferencesKey("slide_interval")
         val lockVault = booleanPreferencesKey("lock_vault")
@@ -74,7 +71,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
 
     private fun Preferences.toSettings() = AppSettings(
         columns = (this[K.columns] ?: 4).coerceIn(2, 6),
-        stripLocation = this[K.stripLocation] ?: true,
         onThisDay = this[K.onThisDay] ?: true,
         slideInterval = enumOr(this[K.slideInterval], SlideInterval.S4),
         lockVault = this[K.lockVault] ?: true,
@@ -90,7 +86,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             context.appDataStore.edit { p ->
                 val s = transform(p.toSettings())
                 p[K.columns] = s.columns
-                p[K.stripLocation] = s.stripLocation
                 p[K.onThisDay] = s.onThisDay
                 p[K.slideInterval] = s.slideInterval.name
                 p[K.lockVault] = s.lockVault

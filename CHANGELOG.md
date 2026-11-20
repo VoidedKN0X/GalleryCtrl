@@ -8,17 +8,14 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 Not released yet: these changes are built but have no version number. When the next version is published, move them under its heading.
 
-### Privacy
+### Removed
 
-- **"Remove location when sharing" no longer lets videos and other file types through with their location.** Until now only JPEG, WebP, PNG and HEIC photos had their location removed; videos, AVIF, RAW/DNG, GIF and JPEG XL files were shared exactly as they were, location included, even with the setting on. With the setting on (the default), nothing is shared any more unless its location was removed or GalleryCtrl could tell it has none:
-  - **MP4, MOV and 3GP videos are rewritten without the location.** The picture and sound are copied into a new MP4 exactly as they are (nothing is re-encoded, so the quality is the same) and the rotation is kept. Android's own tools do this, and they only write a location when asked to. The copy is checked afterwards: Android must report no location, no known location entry may be left in the file, and the rotation must match the original. **A rewrite also drops everything else stored in the video file:** the recording date (it becomes the moment you shared), camera make and model, titles, and extra data tracks such as motion data. A MOV or 3GP is shared as an MP4. Your original isn't touched. A short "Removing the location from the video…" message shows while this runs; a long video takes a while and needs as much free space as the video itself.
-  - **A video that can't be rewritten** (a codec Android's MP4 writer doesn't accept, a subtitle track, a damaged file, not enough free space) is shared as an exact copy only if no location is found in it. Otherwise it isn't shared.
-  - **AVIF, DNG and RAW photos and GIFs** can't be rewritten. An exact copy is shared only if GalleryCtrl can read the file's details and finds no GPS tags and no XMP position in it.
-  - **File types GalleryCtrl can't read well enough to be sure are not shared while the setting is on:** JPEG XL, Canon CR3, MKV and WebM videos, and AVIF or RAW files that carry no camera details at all.
-  - **You're told what was left out:** "N videos weren't shared: their location couldn't be removed" for videos, "N files weren't shared: the location can't be removed from this file type" for other formats, and the existing message for photos. Everything else in the selection is still shared. To share an item as it is, turn off Settings > Remove location when sharing.
-  - Sharing with the setting off is unchanged: the originals are shared as they are.
-- **Not tested on a phone yet.** This change was only built by GitHub, never run. In particular it's untried whether every kind of recording (Dolby Vision, HDR10+, slow motion) goes through the rewrite and plays correctly afterwards. If the rewrite fails, the video is refused rather than shared with its location.
-- **Limits of the check:** it looks in the standard places a location is kept (EXIF GPS tags, XMP, and the location entries of MP4/MOV files). A position a camera stores in its own private format, or prints into the picture, isn't recognised.
+- **"Remove location when sharing" is gone.** The setting, and the whole Sharing group in Settings, were removed at the owner's request. Sharing now always hands the original photo or video to the app you pick, exactly as it is in your library, including the place it was taken if the file has one. Before, with the setting on (the default), JPEG, WebP, PNG and HEIC photos were shared as a copy without their GPS position.
+  - If a file must not carry its location, remove it before sharing. Photos taken with CameraCtrl don't record a location in the first place; photos from other cameras, downloads or chat apps may.
+  - GalleryCtrl no longer makes copies to share, so the file provider that served those copies was removed from the app, and copies left in the cache by an older version are deleted at the next start.
+  - The "Access media location" permission stays: Info and the photo map still use it.
+  - An earlier unreleased change on `main` that made this setting refuse or rewrite videos and other file types was removed with it and never shipped.
+- **Not tested on a phone yet.** This change was only built by GitHub, never run.
 
 ### Faster and smoother
 

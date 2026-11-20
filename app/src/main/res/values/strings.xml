@@ -125,23 +125,6 @@
     <string name="slide_2">2 seconds</string>
     <string name="slide_4">4 seconds</string>
     <string name="slide_8">8 seconds</string>
-    <string name="group_sharing">Sharing</string>
-    <string name="strip_location">Remove location when sharing</string>
-    <string name="strip_location_sub">The shared copy has no GPS position; your original keeps it</string>
-    <string name="sharing_footer">JPEG, WebP, PNG and HEIC photos get their location removed. MP4, MOV and 3GP videos are rewritten without it (same picture and sound, but the recording date and other details in the file are lost too). Other file types are shared only if no location is found in them. Anything whose location can\'t be removed or ruled out isn\'t shared while this is on.</string>
-    <string name="share_removing_video_location">Removing the location from the video…</string>
-    <plurals name="share_location_not_removed">
-        <item quantity="one">1 photo wasn\'t shared: its location couldn\'t be removed. Turn off \"Remove location when sharing\" to share it as it is.</item>
-        <item quantity="other">%d photos weren\'t shared: their location couldn\'t be removed. Turn off \"Remove location when sharing\" to share them as they are.</item>
-    </plurals>
-    <plurals name="share_video_location_not_removed">
-        <item quantity="one">1 video wasn\'t shared: its location couldn\'t be removed. Turn off \"Remove location when sharing\" to share it as it is.</item>
-        <item quantity="other">%d videos weren\'t shared: their location couldn\'t be removed. Turn off \"Remove location when sharing\" to share them as they are.</item>
-    </plurals>
-    <plurals name="share_type_location_not_removed">
-        <item quantity="one">1 file wasn\'t shared: the location can\'t be removed from this file type. Turn off \"Remove location when sharing\" to share it as it is.</item>
-        <item quantity="other">%d files weren\'t shared: the location can\'t be removed from this file type. Turn off \"Remove location when sharing\" to share them as they are.</item>
-    </plurals>
     <string name="lock_vault">Ask for the PIN for the vault</string>
     <string name="lock_vault_sub">Uses the app lock\'s PIN or fingerprint</string>
     <string name="vault_footer">The vault is encrypted with AES-256 and a key held in this phone\'s secure hardware. It isn\'t included in backups.</string>

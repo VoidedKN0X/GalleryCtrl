@@ -21,7 +21,6 @@ GalleryCtrl has no server and no internet permission: everything stays on your p
 
 - Any way for GalleryCtrl to send photos, videos or their details off the phone
 - Reading vault contents without the key, decrypted vault files left behind, or the vault opening without the PIN when it should ask
-- Location left in a shared copy when "Remove location when sharing" is on
 - Deleted photos remaining recoverable through GalleryCtrl
 - Ways around the app lock, or protected screens showing up in screenshots when they shouldn't
 - Weaknesses in the app lock PIN

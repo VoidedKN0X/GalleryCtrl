@@ -31,7 +31,6 @@ import com.vknxworks.galleryctrl.data.settings.LockTimeout
 import com.vknxworks.galleryctrl.data.settings.SlideInterval
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Slideshow
 import com.vknxworks.galleryctrl.ui.components.Group
 import com.vknxworks.galleryctrl.ui.components.GroupChoice
@@ -60,9 +59,6 @@ fun SettingsScreen() {
                 GroupChoice(stringResource(R.string.grid_size), (2..6).map { it to it.toString() }, settings.columns, icon = Icons.Outlined.GridView) { v -> set { it.copy(columns = v) } }
                 GroupSwitch(stringResource(R.string.on_this_day_setting), stringResource(R.string.on_this_day_sub), settings.onThisDay, Icons.Outlined.History) { on -> set { it.copy(onThisDay = on) } }
                 GroupChoice(stringResource(R.string.slideshow_interval), SlideInterval.entries.map { it to stringResource(it.label) }, settings.slideInterval, icon = Icons.Outlined.Slideshow) { v -> set { it.copy(slideInterval = v) } }
-            }
-            Group(stringResource(R.string.group_sharing), footer = stringResource(R.string.sharing_footer)) {
-                GroupSwitch(stringResource(R.string.strip_location), stringResource(R.string.strip_location_sub), settings.stripLocation, Icons.Outlined.LocationOff) { on -> set { it.copy(stripLocation = on) } }
             }
             Group(stringResource(R.string.vault), footer = stringResource(R.string.vault_footer)) {
                 GroupSwitch(stringResource(R.string.lock_vault), stringResource(R.string.lock_vault_sub), settings.lockVault, Icons.Outlined.Lock) { on -> set { it.copy(lockVault = on) } }

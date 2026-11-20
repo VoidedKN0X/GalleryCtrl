@@ -152,7 +152,7 @@ fun ViewerScreen() {
                     Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.45f)).navigationBarsPadding().padding(vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    CtrlSquareButton(Icons.Outlined.Share, stringResource(R.string.share), { Sharing.share(context, listOf(item), settings.stripLocation) }, tint = Color.White)
+                    CtrlSquareButton(Icons.Outlined.Share, stringResource(R.string.share), { Sharing.share(context, listOf(item)) }, tint = Color.White)
                     CtrlSquareButton(
                         if (item.favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, stringResource(R.string.favorite),
                         { request(MediaRequests.favorite(context, listOf(item), !item.favorite)) }, tint = if (item.favorite) CtrlColors.Accent else Color.White,

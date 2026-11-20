@@ -6,7 +6,7 @@ Gallery app in the VKNXWorks Ctrl series. Kotlin, Jetpack Compose, Material 3, m
 
 - `media/Media.kt`: `MediaRepository` over MediaStore Files (images + videos, trashed items excluded), a ContentObserver, Android's thumbnail store with an LRU cache.
 - `media/Actions.kt`: `MediaRequests` (favourite and permanent delete through MediaStore requests; no trash), `Sharing` (hands the original MediaStore URIs to the chooser; no copies, no FileProvider), `Vault` (AES-256-GCM files and an encrypted `index.bin` in `filesDir/vault`, key in AndroidKeyStore; photos and thumbnails decrypted in memory only, videos into `cacheDir/vault`, wiped with `File.wipe()`).
-- `media/Duplicates.kt`: dHash + 3×3 colour grid.
+- `media/Duplicates.kt`: dHash + 3×3 colour grid, hashes kept in memory only (cleared on lock). `media/DuplicateGroups.kt`: the grouping on plain arrays (unit-tested against comparing every pair; the groups must stay identical to that).
 - `media/OnThisDay.kt` (date matching: EXIF camera date, then EXIF offset, then phone zone; 29 Feb on 28 Feb), `media/PhotoInfo.kt` (EXIF dates for On this day, memory only, cleared on lock; no GPS).
 - `ui/gallery`: `Grids.kt` (access, grids, tabs, album, search, duplicates, vault), `Viewer.kt` (pager, zoom, video, Ultra HDR, info, vault viewer). Info is the only place a photo's location is read (EXIF via `setRequireOriginal`, needs `ACCESS_MEDIA_LOCATION`).
 - `data/settings/AppSettings.kt`: `removeMapLeftovers()` is the one-time clean-up for the removed photo map (releases the old map file's persisted read grant, deletes the `map_file` key). Nothing else persists URI grants; if a feature ever does, change that clean-up first.

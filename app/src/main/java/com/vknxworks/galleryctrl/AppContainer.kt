@@ -70,6 +70,7 @@ class AppContainer(val context: Context) {
     fun onLocked() {
         photoVault.closeCache()
         photoInfo.clear()
+        com.vknxworks.galleryctrl.media.Duplicates.clear()
         vault.close()
     }
 

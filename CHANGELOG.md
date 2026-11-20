@@ -4,6 +4,18 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone.
+
+### Faster and smoother
+
+- **The duplicate finder is much quicker on a big library, and finds exactly the same groups.** Three things changed in **Albums > Duplicates**:
+  - *Comparing.* Every photo used to be compared with every other photo (for 20,000 photos that's about 200 million comparisons). Two photos only count as similar when their 64-bit fingerprints differ in at most 4 bits, and then at least one of five slices of the fingerprint must be exactly the same in both. So GalleryCtrl now only compares photos that share a slice. This is a shortcut that can't miss a pair; a test compares its result with the old every-pair method on thousands of made-up libraries (`DuplicateGroupsTest`). The groups, the order inside a group and which photo is marked **Best** are unchanged.
+  - *Reading.* Thumbnails are fingerprinted 4 at a time instead of one after the other.
+  - *Looking again.* After **Keep best** the list is worked out again. The fingerprints of photos already looked at are now remembered, so that takes a moment instead of reading every thumbnail again. They are kept in memory only, never written to storage, dropped for photos that are gone or changed, and forgotten when the app locks or closes.
+- **The duplicate finder no longer empties the grid's thumbnail memory.** It used to put a small thumbnail of every photo in the same memory the grids use, pushing out the thumbnails you had been looking at, so the Photos tab had to load them again afterwards. Its thumbnails are now used once and freed straight away.
+
 ## v0.3.0 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

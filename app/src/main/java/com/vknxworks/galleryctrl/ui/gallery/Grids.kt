@@ -572,7 +572,8 @@ fun DuplicatesScreen() {
     var groups by remember { mutableStateOf<List<List<MediaItem>>?>(null) }
     val request = rememberMediaRequest()
     LaunchedEffect(items.size) {
-        groups = Duplicates.find(items, { c.media.thumbnail(it, 96) }, { progress = it })
+        // Thumbnails read for hashing aren't kept in the grid's thumbnail memory, and are freed right after.
+        groups = Duplicates.find(items, { c.media.uncachedThumbnail(it, 96) }, { progress = it }, recycleThumbs = true)
     }
     val px = with(LocalDensity.current) { 110.dp.roundToPx() }
     Column(Modifier.fillMaxSize()) {

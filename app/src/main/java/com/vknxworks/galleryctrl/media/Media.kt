@@ -162,7 +162,18 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
     suspend fun thumbnail(item: MediaItem, px: Int): Bitmap? {
         val key = "${item.id}:$px"
         thumbs.get(key)?.let { return it }
-        return withContext(thumbLoader) {
+        return load(item, px)?.also { thumbs.put(key, it) }
+    }
+
+    /**
+     * A thumbnail read fresh for the caller alone and not kept in memory here: for the duplicate finder, which
+     * looks at every photo once and would otherwise push the grid's thumbnails out of the cache. The caller may
+     * recycle it. Read the same way, and as few at a time, as [thumbnail].
+     */
+    suspend fun uncachedThumbnail(item: MediaItem, px: Int): Bitmap? = load(item, px)
+
+    private suspend fun load(item: MediaItem, px: Int): Bitmap? =
+        withContext(thumbLoader) {
             val signal = CancellationSignal()
             // Waits for this request to be cancelled; resumes right on the cancelling thread and passes it on.
             val watcher = launch(Dispatchers.Unconfined) {
@@ -173,12 +184,11 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
                 }
             }
             try {
-                runCatching { context.contentResolver.loadThumbnail(item.uri, Size(px, px), signal) }.getOrNull()?.also { thumbs.put(key, it) }
+                runCatching { context.contentResolver.loadThumbnail(item.uri, Size(px, px), signal) }.getOrNull()
             } finally {
                 watcher.cancel()
             }
         }
-    }
 
     fun stop() = context.contentResolver.unregisterContentObserver(observer)
 

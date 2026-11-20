@@ -18,6 +18,9 @@ Built and checked by CI only: nothing here has been run on a phone.
 
 - **On this day shows up sooner the first time.** To know on which day a photo was taken where it was taken, GalleryCtrl reads the date inside the photo file, for the photos from around today's date in earlier years. It used to read them one after the other; it now reads 4 at a time. Which photos are shown, and in which order, is unchanged.
 
+- **The Photos tab fills in sooner when the app starts with a big library.** The whole library used to be read before the first photo was shown. Now the newest 500 photos and videos are shown as soon as they've been read, and the rest follows a moment later in the same grid, at the same place. Only the Photos tab does this, and only at the first load after the app starts. Albums, search, On this day and duplicates still wait for the whole library, so their counts and results are never half-done; later refreshes replace the list in one go as before.
+  - If you open a photo in that first moment, the viewer pages through those newest 500 until you go back to the grid.
+
 ## v0.3.0 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

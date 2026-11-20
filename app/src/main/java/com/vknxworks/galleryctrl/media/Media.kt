@@ -56,6 +56,15 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
     val items: StateFlow<List<MediaItem>> = _items.asStateFlow()
     val loading = MutableStateFlow(true)
 
+    /**
+     * The newest [FIRST_ROWS] photos and videos, handed out as soon as they've been read while the rest of the
+     * library is still being read at the very first load, so the Photos tab has something to show sooner. Only
+     * ever the start of what [items] gets a moment later; empty before that and again once [items] is filled.
+     * Everything that needs the whole library (albums, search, On this day, duplicates) keeps using [items].
+     */
+    private val _firstRows = MutableStateFlow<List<MediaItem>>(emptyList())
+    val firstRows: StateFlow<List<MediaItem>> = _firstRows.asStateFlow()
+
     private val thumbs = object : LruCache<String, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
@@ -76,12 +85,19 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
         reloadJob?.cancel()
         reloadJob = scope.launch {
             if (debounce) delay(400)
-            _items.value = withContext(Dispatchers.IO) { query(trashedOnly = false) }
+            // Only the very first load hands out its first rows early; a later reload replaces the list in one go.
+            val first = loading.value && _items.value.isEmpty()
+            val publishFirstRows: (List<MediaItem>) -> Unit = { rows -> if (loading.value) _firstRows.value = rows }
+            _items.value = withContext(Dispatchers.IO) {
+                query(trashedOnly = false, onFirstRows = if (first) publishFirstRows else null)
+            }
             loading.value = false
+            _firstRows.value = emptyList()
         }
     }
 
-    private fun query(trashedOnly: Boolean): List<MediaItem> {
+    /** [onFirstRows] gets a copy of the first [FIRST_ROWS] rows as soon as they're read, when there are more. */
+    private fun query(trashedOnly: Boolean, onFirstRows: ((List<MediaItem>) -> Unit)? = null): List<MediaItem> {
         val uri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         val projection = arrayOf(
             MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.MIME_TYPE,
@@ -141,6 +157,7 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
                         trashed = c.getInt(iTrash) == 1,
                         trashExpires = c.getLong(iExp) * 1000,
                     )
+                    if (onFirstRows != null && out.size == FIRST_ROWS && !c.isLast) onFirstRows(ArrayList(out))
                 }
             }
         }
@@ -194,5 +211,6 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
 
     private companion object {
         const val THUMB_LOADERS = 4
+        const val FIRST_ROWS = 500
     }
 }

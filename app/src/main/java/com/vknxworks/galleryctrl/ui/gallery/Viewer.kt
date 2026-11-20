@@ -97,8 +97,12 @@ fun ViewerScreen() {
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val source by c.viewerList.collectAsStateWithLifecycle()
     val live by c.media.items.collectAsStateWithLifecycle()
-    // Keep favourites and deletions current while viewing.
-    val items = remember(source, live) { val byId = live.associateBy { it.id }; source.mapNotNull { byId[it.id] } }
+    val loading by c.media.loading.collectAsStateWithLifecycle()
+    // Keep favourites and deletions current while viewing. (A photo opened in the moment the library is still
+    // being read for the first time is shown from the list it was opened from until the library is in.)
+    val items = remember(source, live, loading) {
+        if (loading && live.isEmpty()) source else { val byId = live.associateBy { it.id }; source.mapNotNull { byId[it.id] } }
+    }
     val start = remember { c.viewerStart.value }
     val pager = rememberPagerState(initialPage = start.coerceIn(0, (source.size - 1).coerceAtLeast(0))) { items.size }
     var chrome by remember { mutableStateOf(true) }

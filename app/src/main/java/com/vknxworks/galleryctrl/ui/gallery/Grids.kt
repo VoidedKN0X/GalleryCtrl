@@ -319,6 +319,9 @@ fun PhotosScreen() {
     MediaAccess { limited, pickMore ->
         val items by c.media.items.collectAsStateWithLifecycle()
         val loading by c.media.loading.collectAsStateWithLifecycle()
+        // While the library is read for the first time, the newest photos show as soon as they're in.
+        val firstRows by c.media.firstRows.collectAsStateWithLifecycle()
+        val shown = if (loading && items.isEmpty()) firstRows else items
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val memories = rememberOnThisDay(items, settings.onThisDay)
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -338,7 +341,7 @@ fun PhotosScreen() {
                     MessageView(Icons.Outlined.Photo, stringResource(R.string.no_photos), stringResource(R.string.no_photos_body))
                 }
             } else {
-                MediaGrid(items, Modifier.weight(1f)) {
+                MediaGrid(shown, Modifier.weight(1f)) {
                     if (limited) {
                         item(span = { GridItemSpan(maxLineSpan) }, key = "limited") {
                             Row(

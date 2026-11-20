@@ -10,12 +10,18 @@ Not released yet: these changes are built but have no version number. When the n
 
 ### Removed
 
+- **The photo map is gone.** **Albums > Map** and everything behind it were removed at the owner's request: the pins and numbered clusters, the simple world map with country outlines, the Mapsforge map from a `.map` file, the layers button with *Choose a map file*, *Use the simple map* and *Where to get map files*, and the scan that read the GPS position of every photo in your library to place the pins.
+  - **What stays:** a photo's **Info** still shows its location (as coordinates) when the file has one, so the "Access media location" permission stays and is still asked for together with photo access. On this day is unchanged; it only ever read dates. Grids, albums, search, duplicates, the vault, the viewer, sharing and settings are untouched.
+  - **Your photos and your map files are not touched.** A `.map` file you picked stays where it is on the phone; GalleryCtrl just no longer reads it. At the first start after updating, GalleryCtrl gives back the permission Android kept for reading that file and deletes the saved choice of map file. That was the only such permission the app ever held.
+  - **Smaller app:** the Mapsforge libraries (with AndroidSVG, which came with them) and the built-in Natural Earth country outlines were removed from the app, along with their shrinker rules, their credits in the README and the map's unit tests.
+  - GalleryCtrl now reads where a photo was taken only when you open that photo's Info. Nothing goes through your library for locations any more.
+  - **Not tested on a phone.** The removal, and the one-time clean-up at the first start, were only built by GitHub (CI), never run on a device.
 - **"Remove location when sharing" is gone.** The setting, and the whole Sharing group in Settings, were removed at the owner's request. Sharing now always hands the original photo or video to the app you pick, exactly as it is in your library, including the place it was taken if the file has one. Before, with the setting on (the default), JPEG, WebP, PNG and HEIC photos were shared as a copy without their GPS position.
   - If a file must not carry its location, remove it before sharing. Photos taken with CameraCtrl don't record a location in the first place; photos from other cameras, downloads or chat apps may.
   - GalleryCtrl no longer makes copies to share, so the file provider that served those copies was removed from the app, and copies left in the cache by an older version are deleted at the next start.
-  - The "Access media location" permission stays: Info and the photo map still use it.
+  - The "Access media location" permission stays: Info still uses it.
   - An earlier unreleased change on `main` that made this setting refuse or rewrite videos and other file types was removed with it and never shipped.
-- **Not tested on a phone yet.** This change was only built by GitHub, never run.
+- **Not tested on a phone yet.** Both removals above were only built by GitHub, never run.
 
 ### Faster and smoother
 

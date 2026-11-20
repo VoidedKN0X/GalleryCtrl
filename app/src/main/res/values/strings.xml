@@ -62,26 +62,6 @@
     <string name="empty_album">Nothing here</string>
     <string name="slideshow">Slideshow</string>
 
-    <!-- Map -->
-    <string name="map">Map</string>
-    <string name="map_scanning">Reading photo locations: %1$d / %2$d</string>
-    <string name="map_no_places">No photos with a location</string>
-    <string name="map_no_places_body">A photo shows on the map only when the camera saved where it was taken. Vault items never appear here.</string>
-    <string name="map_location_permission">Allow access to photo locations</string>
-    <string name="map_location_permission_body">Android only shows GalleryCtrl where photos were taken with the photo location permission. Locations are read on this phone and never stored or sent anywhere.</string>
-    <string name="map_pick_file">Choose a map file</string>
-    <string name="map_use_simple">Use the simple map</string>
-    <string name="map_options">Map options</string>
-    <string name="map_get_maps">Where to get map files</string>
-    <string name="map_file_hint">For streets and places, choose a Mapsforge .map file you saved on this phone, for example one from download.mapsforge.org (the maps MapsCtrl uses). GalleryCtrl stays offline: it never downloads maps itself.</string>
-    <string name="map_file_error">That file couldn\'t be opened as a Mapsforge map. Showing the simple map.</string>
-    <string name="map_simple_credit">Country outlines: Natural Earth</string>
-    <string name="map_no_browser">No browser found to open the page.</string>
-    <plurals name="map_photo_count">
-        <item quantity="one">%1$d photo</item>
-        <item quantity="other">%1$d photos</item>
-    </plurals>
-
     <!-- Duplicates -->
     <string name="finding_duplicates">Comparing your photos on the phone…</string>
     <string name="no_duplicates">No duplicates found</string>

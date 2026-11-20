@@ -43,7 +43,6 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -104,7 +103,6 @@ import com.vknxworks.galleryctrl.ui.lock.AppLockGate
 import com.vknxworks.galleryctrl.ui.nav.AlbumRoute
 import com.vknxworks.galleryctrl.ui.nav.DuplicatesRoute
 import com.vknxworks.galleryctrl.ui.nav.LocalNavigator
-import com.vknxworks.galleryctrl.ui.nav.MapRoute
 import com.vknxworks.galleryctrl.ui.nav.OnThisDayRoute
 import com.vknxworks.galleryctrl.ui.nav.SearchRoute
 import com.vknxworks.galleryctrl.ui.nav.VaultRoute
@@ -459,7 +457,6 @@ fun AlbumsScreen() {
                         CollectionRow(Icons.Outlined.Videocam, stringResource(R.string.videos), items.count { it.isVideo }) { nav.navigate(AlbumRoute("videos")) }
                         CollectionRow(Icons.Outlined.Lock, stringResource(R.string.vault), vault.size) { nav.navigate(VaultRoute) }
                         CollectionRow(Icons.Outlined.ContentCopy, stringResource(R.string.duplicates), null) { nav.navigate(DuplicatesRoute) }
-                        CollectionRow(Icons.Outlined.Map, stringResource(R.string.map), null) { nav.navigate(MapRoute) }
                         CollectionRow(Icons.Outlined.History, stringResource(R.string.on_this_day_title), null) { nav.navigate(OnThisDayRoute) }
                         Spacer(Modifier.height(12.dp))
                         SectionLabel(stringResource(R.string.folders))

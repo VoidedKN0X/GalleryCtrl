@@ -1,6 +1,7 @@
 package com.vknxworks.galleryctrl.data.settings
 
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.io.IOException
@@ -45,8 +47,6 @@ data class AppSettings(
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     val hideScreenshots: Boolean = false,
     val hideRecents: Boolean = false,
-    /** The Mapsforge .map file picked for the photo map (a content:// URI kept with a persisted grant), or "". */
-    val mapFile: String = "",
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -58,7 +58,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
-        val mapFile = stringPreferencesKey("map_file")
+        /** Left by versions that had the photo map; only [removeMapLeftovers] touches it. */
+        val legacyMapFile = stringPreferencesKey("map_file")
     }
 
     private val prefs: Flow<Preferences> = context.appDataStore.data.catch { e ->
@@ -77,7 +78,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
-        mapFile = this[K.mapFile] ?: "",
     )
 
     /** Saves a change. If the phone's storage fails, the change is dropped instead of closing the app. */
@@ -92,10 +92,30 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 p[K.lockTimeout] = s.lockTimeout.name
                 p[K.hideScreenshots] = s.hideScreenshots
                 p[K.hideRecents] = s.hideRecents
-                p[K.mapFile] = s.mapFile
             }
         } catch (e: IOException) {
             // Nothing to do: the settings stay as they were.
+        }
+    }
+
+    /**
+     * One-time clean-up after the photo map was removed. Older versions saved the picked map file under "map_file"
+     * and kept a persisted read grant for it; that was the only persisted URI grant GalleryCtrl ever took. If the
+     * old setting is still there, every persisted grant is given back and the setting deleted, so this does nothing
+     * on later starts. Call off the main thread.
+     */
+    suspend fun removeMapLeftovers() {
+        try {
+            if (!context.appDataStore.data.first().contains(K.legacyMapFile)) return
+            runCatching {
+                val resolver = context.contentResolver
+                for (grant in resolver.persistedUriPermissions) {
+                    runCatching { resolver.releasePersistableUriPermission(grant.uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                }
+            }
+            context.appDataStore.edit { it.remove(K.legacyMapFile) }
+        } catch (_: IOException) {
+            // Storage failed: tried again at the next start.
         }
     }
 

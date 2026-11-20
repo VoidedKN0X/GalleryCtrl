@@ -126,10 +126,5 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
-    // Photo map: Mapsforge (LGPL-3.0) draws an offline .map file you pick; it never downloads anything.
-    implementation(libs.mapsforge.map.android)
-    implementation(libs.mapsforge.map.reader)
-    implementation(libs.mapsforge.themes)
-
     testImplementation(libs.junit)
 }

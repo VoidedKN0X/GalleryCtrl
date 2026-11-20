@@ -25,7 +25,7 @@ class AppContainer(val context: Context) {
     val media = MediaRepository(context, appScope)
     /** The encrypted private vault for photos and videos. */
     val photoVault = Vault(context, appScope)
-    /** Dates and GPS positions read from the library's photos for On this day and the map (memory only). */
+    /** Dates read from the library's photos for On this day (memory only). */
     val photoInfo = com.vknxworks.galleryctrl.media.PhotoInfo(context)
 
     /** Which tab to open. */
@@ -43,6 +43,8 @@ class AppContainer(val context: Context) {
         AppLock.onLocked = { onLocked() }
         // Leftover share copies from last time, off the main thread.
         appScope.launch(Dispatchers.IO) { Sharing.clearCache(context) }
+        // The photo map was removed: give back its map file's read grant and forget the setting, once.
+        appScope.launch(Dispatchers.IO) { settings.removeMapLeftovers() }
     }
 
     suspend fun enableLock(pin: String) {

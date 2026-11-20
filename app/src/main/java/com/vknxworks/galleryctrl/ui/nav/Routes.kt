@@ -14,7 +14,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object DuplicatesRoute
 @Serializable data object SearchRoute
 @Serializable data object OnThisDayRoute
-@Serializable data object MapRoute
 
 // Opened from the profile picture: the You page, and Settings from there
 @Serializable data object YouRoute

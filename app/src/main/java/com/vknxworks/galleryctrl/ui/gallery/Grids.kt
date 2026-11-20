@@ -112,7 +112,9 @@ import com.vknxworks.galleryctrl.ui.nav.ViewerRoute
 import com.vknxworks.galleryctrl.ui.theme.CtrlColors
 import com.vknxworks.galleryctrl.ui.theme.CtrlType
 import com.vknxworks.galleryctrl.ui.theme.Gutter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -176,7 +178,8 @@ fun rememberMediaRequest(onDone: (Boolean) -> Unit = {}): (android.app.PendingIn
 @Composable
 fun Thumb(item: MediaItem, px: Int, modifier: Modifier = Modifier) {
     val c = LocalContext.current.container
-    val bmp by produceState<android.graphics.Bitmap?>(null, item.id) { value = c.media.thumbnail(item, px) }
+    // Starts from the copy in memory when there is one, so a tile scrolled back into view isn't blank for a frame.
+    val bmp by produceState<android.graphics.Bitmap?>(c.media.cachedThumbnail(item, px), item.id) { value = c.media.thumbnail(item, px) }
     Box(modifier.background(CtrlColors.Raised)) {
         bmp?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         if (item.isVideo) {
@@ -195,7 +198,7 @@ fun durationText(ms: Long): String {
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
 }
 
-private fun dayOf(ms: Long): LocalDate = Instant.ofEpochMilli(ms).atZone(ZoneId.systemDefault()).toLocalDate()
+private fun dayOf(ms: Long, zone: ZoneId = ZoneId.systemDefault()): LocalDate = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
 
 @Composable
 private fun dayLabel(d: LocalDate): String = when (d) {
@@ -227,6 +230,11 @@ fun MediaGrid(
     val scope = rememberCoroutineScope()
     val px = with(LocalDensity.current) { (360.dp / settings.columns).roundToPx() }.coerceAtLeast(96)
     BackHandler(enabled = selected.isNotEmpty()) { selected = emptySet() }
+    // Grouped once per list (and per time zone), not again on every tap while selecting or change of grid size.
+    val zone = ZoneId.systemDefault()
+    val groups = remember<List<Pair<Any, List<MediaItem>>>>(items, sections, groupByDay, zone) {
+        sections ?: if (groupByDay) items.groupBy { dayOf(it.date, zone) }.toList() else listOf(LocalDate.MIN to items)
+    }
 
     fun open(item: MediaItem) {
         c.viewerList.value = items
@@ -244,15 +252,13 @@ fun MediaGrid(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             header?.invoke(this)
-            val groups: List<Pair<Any, List<MediaItem>>> = sections
-                ?: if (groupByDay) items.groupBy { dayOf(it.date) }.toList() else listOf(LocalDate.MIN to items)
             groups.forEach { (day, list) ->
                 if (sections != null || groupByDay) {
-                    item(span = { GridItemSpan(maxLineSpan) }, key = "h$day") {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "h$day", contentType = "header") {
                         Text(if (day is LocalDate) dayLabel(day) else day.toString(), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.padding(start = Gutter, top = 18.dp, bottom = 8.dp))
                     }
                 }
-                items(list, key = { it.id }) { item ->
+                items(list, key = { it.id }, contentType = { "photo" }) { item ->
                     val isSel = item.id in selected
                     val scale by animateFloatAsState(if (isSel) 0.86f else 1f, label = "sel")
                     Box(
@@ -529,12 +535,21 @@ fun SearchScreen() {
     val c = LocalContext.current.container
     val items by c.media.items.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
+    /** The query [shown] was last worked out for; "No results" waits for it, so it doesn't flash while matching. */
+    var searched by remember { mutableStateOf("") }
     val fmt = remember { DateTimeFormatter.ofPattern("d MMMM yyyy EEEE") }
-    val shown = remember(items, query) {
+    // The whole library is matched off the main thread, so typing stays smooth with many photos. The last results
+    // stay on screen until the new ones are ready.
+    var shown by remember { mutableStateOf(emptyList<MediaItem>()) }
+    LaunchedEffect(items, query) {
         val q = query.trim().lowercase()
-        if (q.isEmpty()) emptyList() else items.filter {
-            it.name.lowercase().contains(q) || it.album.lowercase().contains(q) || dayOf(it.date).format(fmt).lowercase().contains(q)
+        shown = if (q.isEmpty()) emptyList() else withContext(Dispatchers.Default) {
+            val zone = ZoneId.systemDefault()
+            items.filter {
+                it.name.lowercase().contains(q) || it.album.lowercase().contains(q) || dayOf(it.date, zone).format(fmt).lowercase().contains(q)
+            }
         }
+        searched = query
     }
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar(stringResource(R.string.search))
@@ -545,7 +560,7 @@ fun SearchScreen() {
             leadingIcon = { Icon(Icons.Outlined.Search, null) },
             singleLine = true,
         )
-        if (query.isNotBlank() && shown.isEmpty()) MessageView(Icons.Outlined.Search, stringResource(R.string.no_results))
+        if (query.isNotBlank() && shown.isEmpty() && searched.isNotBlank()) MessageView(Icons.Outlined.Search, stringResource(R.string.no_results))
         else MediaGrid(shown, Modifier.weight(1f).navigationBarsPadding())
     }
 }

@@ -4,6 +4,18 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not released yet: these changes are built but have no version number. When the next version is published, move them under its heading.
+
+### Faster and smoother
+
+- **Selecting photos no longer stutters in a big library.** The grid used to sort every photo into its day again on each tap while selecting, each change of the grid size and each redraw. It now does that once per list (and again only when the library, the list shown or the phone's time zone changes). What you see is the same.
+- **Smoother scrolling:** day headings and photo tiles are now told apart in the grid, so Android reuses a tile for a tile and a heading for a heading.
+- **Thumbnails you've already seen show at once.** A photo scrolled back into view used to be an empty square for a moment even when its thumbnail was still in memory; it's now drawn straight away.
+- **A fast scroll no longer starts hundreds of thumbnail reads.** At most 4 thumbnails are read at a time. Photos that have already scrolled off the screen are skipped instead of being read anyway, and a read that's under way is told to stop. This saves battery and makes the thumbnails you're actually looking at appear sooner.
+- **Search no longer freezes while you type.** Matching names, folders and dates against the whole library now happens in the background. The previous results stay on screen until the new ones are ready, and "No results" shows only once the search is done. The results are the same as before.
+
 ## v0.2.0 (2026-11-13)
 
 On this day gets its own page and includes videos, and there's a new offline photo map.

@@ -6,6 +6,7 @@ import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
@@ -14,6 +15,7 @@ import android.util.Size
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +59,8 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
     private val thumbs = object : LruCache<String, Bitmap>(64 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
+    /** Thumbnails are read by a few threads at a time, so a fast scroll doesn't start hundreds of reads at once. */
+    private val thumbLoader = Dispatchers.IO.limitedParallelism(THUMB_LOADERS)
     private var reloadJob: Job? = null
 
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
@@ -147,14 +151,38 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
         list.groupBy { it.albumId }.map { (id, l) -> Album(id, l.first().album, l.first(), l.size) }
             .sortedWith(compareByDescending<Album> { it.name.equals("Camera", true) }.thenByDescending { it.count })
 
-    /** A cached thumbnail (Android's own thumbnail store), on a background thread. */
+    /** The thumbnail if it's already in memory, without waiting; null when it still has to be loaded. */
+    fun cachedThumbnail(item: MediaItem, px: Int): Bitmap? = thumbs.get("${item.id}:$px")
+
+    /**
+     * A cached thumbnail (Android's own thumbnail store), on a background thread. At most [THUMB_LOADERS] are read
+     * at a time; a request that's cancelled while it waits its turn (its tile scrolled away) is never started, and one
+     * that's cancelled while Android is reading is told to stop.
+     */
     suspend fun thumbnail(item: MediaItem, px: Int): Bitmap? {
         val key = "${item.id}:$px"
         thumbs.get(key)?.let { return it }
-        return withContext(Dispatchers.IO) {
-            runCatching { context.contentResolver.loadThumbnail(item.uri, Size(px, px), null) }.getOrNull()?.also { thumbs.put(key, it) }
+        return withContext(thumbLoader) {
+            val signal = CancellationSignal()
+            // Waits for this request to be cancelled; resumes right on the cancelling thread and passes it on.
+            val watcher = launch(Dispatchers.Unconfined) {
+                try {
+                    awaitCancellation()
+                } finally {
+                    signal.cancel()
+                }
+            }
+            try {
+                runCatching { context.contentResolver.loadThumbnail(item.uri, Size(px, px), signal) }.getOrNull()?.also { thumbs.put(key, it) }
+            } finally {
+                watcher.cancel()
+            }
         }
     }
 
     fun stop() = context.contentResolver.unregisterContentObserver(observer)
+
+    private companion object {
+        const val THUMB_LOADERS = 4
+    }
 }

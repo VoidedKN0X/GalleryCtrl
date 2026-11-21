@@ -26,6 +26,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Info:** date, size and resolution, folder, camera, lens, exposure and the photo's location (shown on the phone only)
 - **Search** by file name, folder or date ("june 2024", "12 november")
 - **Select several** with a long-press: share, favourite, delete or move to the vault
+- **Open with GalleryCtrl:** view a photo or video another app opens, and use GalleryCtrl as the photo picker when an app asks you to choose photos or videos (only the files you pick are handed over)
 - **Share** photos and videos with any app; they are sent exactly as they are in your library
 - **Edit** in [LumenCtrl](https://github.com/VoidedKN0X/LumenCtrl) if it's installed, otherwise in any editor you choose
 - **Set as** wallpaper or contact photo, and **slideshows** of any album (2, 4 or 8 seconds per photo)

@@ -179,4 +179,19 @@
     <string name="video_frame_back">One frame back</string>
     <string name="video_frame_forward">One frame forward</string>
     <string name="video_speed">Playback speed</string>
+
+    <!-- Opened from other apps, and the picker -->
+    <string name="close">Close</string>
+    <string name="external_unreadable">Can\'t open this file</string>
+    <string name="external_unreadable_body">The app that sent it didn\'t give GalleryCtrl access, or the file is gone.</string>
+    <string name="pick_photo">Choose a photo</string>
+    <string name="pick_photos">Choose photos</string>
+    <string name="pick_video">Choose a video</string>
+    <string name="pick_videos">Choose videos</string>
+    <string name="pick_item">Choose a photo or video</string>
+    <string name="pick_items">Choose photos and videos</string>
+    <string name="pick_folder">Folder</string>
+    <string name="pick_all_folders">All folders</string>
+    <string name="pick_nothing">Nothing here that this app can take</string>
+    <string name="pick_done">Done</string>
 </resources>

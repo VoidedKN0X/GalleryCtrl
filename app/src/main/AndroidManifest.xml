@@ -46,6 +46,43 @@
             </intent-filter>
         </activity>
 
+        <!-- "Open with GalleryCtrl": one photo or video another app hands over, shown in that app's task. -->
+        <activity
+            android:name=".ViewActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
+            android:exported="true"
+            android:theme="@style/Theme.GalleryCtrl">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- GalleryCtrl as a photo picker for other apps ("Choose a photo"). -->
+        <activity
+            android:name=".PickActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
+            android:exported="true"
+            android:theme="@style/Theme.GalleryCtrl">
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PICK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="vnd.android.cursor.dir/image" />
+                <data android:mimeType="vnd.android.cursor.dir/video" />
+            </intent-filter>
+        </activity>
 
         <!-- No downloadable emoji font: don't let androidx.emoji2 look one up from a font provider
              at start-up. Emoji are drawn with the phone's own emoji font instead. -->

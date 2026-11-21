@@ -76,8 +76,14 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
         override fun onChange(selfChange: Boolean) = reload(debounce = true)
     }
 
+    /** Whether [observer] is registered: the main screen and the picker may both start the library. */
+    private var observing = false
+
     fun start() {
-        context.contentResolver.registerContentObserver(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), true, observer)
+        if (!observing) {
+            context.contentResolver.registerContentObserver(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), true, observer)
+            observing = true
+        }
         reload()
     }
 
@@ -207,7 +213,10 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
             }
         }
 
-    fun stop() = context.contentResolver.unregisterContentObserver(observer)
+    fun stop() {
+        context.contentResolver.unregisterContentObserver(observer)
+        observing = false
+    }
 
     private companion object {
         const val THUMB_LOADERS = 4

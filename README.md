@@ -36,7 +36,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Limited access:** allow only the photos you pick, and add more any time
 - **Back up and restore settings** to a file you pick (no PIN, keys, vault or photos in it; a restore never weakens privacy settings)
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
-- **English and Dutch**, following your phone's language
+- **English, Dutch, French and German**, following your phone's language (or the language you pick for GalleryCtrl in Android's per-app language setting)
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, following your phone's dark theme setting, high contrast, one violet accent, Space Grotesk and JetBrains Mono; landscape, tablet and foldable layouts
 
 ## Requirements

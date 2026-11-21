@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Mediathek, Tresor, Datenschutz und Sicherung</string>
+    <string name="app_lock_subtitle">Beim Öffnen von GalleryCtrl nach einer App-PIN (und auf Wunsch deinem Fingerabdruck) fragen. Auch der Tresor kann eigens danach fragen.</string>
+    <string name="app_lock_footer">GalleryCtrl funktioniert komplett offline: keine Internetberechtigung, keine Analysen, keine Cloud und kein KI-Dienst. Deine Fotos bleiben, wo sie auf diesem Smartphone sind.</string>
+    <string name="lock_prompt_subtitle">Deine Fotos</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. GalleryCtrl löscht alles im Tresor (das schützt die Sperre), setzt seine Einstellungen zurück und schaltet die App-Sperre aus. Deine Fotomediathek selbst bleibt unberührt.</string>
+
+    <!-- Tabs -->
+    <string name="tab_photos">Fotos</string>
+    <string name="tab_albums">Alben</string>
+
+    <!-- Access -->
+    <string name="access_title">Zugriff auf Fotos und Videos erlauben</string>
+    <string name="access_body">GalleryCtrl zeigt die Fotos und Videos auf diesem Smartphone. Es liest sie an Ort und Stelle und sendet sie nirgendwohin.</string>
+    <string name="allow_access">Zugriff erlauben</string>
+    <string name="open_permissions">Berechtigungen öffnen</string>
+    <string name="limited_access">Du hast nur einige Fotos erlaubt.</string>
+    <string name="choose_more">MEHR AUSWÄHLEN</string>
+    <string name="limited_empty">GalleryCtrl sieht nur die Fotos, die du auswählst. Wähle welche aus oder erlaube alle Fotos in den Android-Einstellungen.</string>
+    <string name="choose_photos">Fotos auswählen</string>
+
+    <!-- Photos -->
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <string name="search">Suchen</string>
+    <string name="search_hint">Name, Ordner oder Datum (z. B. \"Juni 2024\")</string>
+    <string name="no_results">Nichts gefunden</string>
+    <string name="grid_size">Rastergröße</string>
+    <string name="no_photos">Noch keine Fotos</string>
+    <string name="no_photos_body">Fotos und Videos, die du aufnimmst oder speicherst, erscheinen hier.</string>
+    <string name="on_this_day">AN DIESEM TAG</string>
+    <plurals name="years_ago_count">
+        <item quantity="one">VOR %1$d JAHR</item>
+        <item quantity="other">VOR %1$d JAHREN</item>
+    </plurals>
+    <plurals name="years_ago_lower">
+        <item quantity="one">vor %1$d Jahr</item>
+        <item quantity="other">vor %1$d Jahren</item>
+    </plurals>
+    <string name="see_all">ALLE ANSEHEN</string>
+    <string name="on_this_day_title">An diesem Tag</string>
+    <string name="on_this_day_empty">Noch nichts von diesem Datum</string>
+    <string name="on_this_day_empty_body">Fotos und Videos, die in früheren Jahren an diesem Datum aufgenommen wurden, erscheinen hier.</string>
+    <string name="share">Teilen</string>
+    <string name="favorite">Favorit</string>
+    <string name="delete">Löschen</string>
+    <string name="move_to_vault">In den Tresor verschieben</string>
+    <string name="move_to_vault_sub">In GalleryCtrl verschlüsselt; aus der Mediathek entfernt</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+
+    <!-- Albums -->
+    <string name="favorites">Favoriten</string>
+    <string name="videos">Videos</string>
+    <string name="vault">Tresor</string>
+    <string name="duplicates">Duplikate</string>
+    <string name="folders">ORDNER</string>
+    <string name="empty_album">Hier ist nichts</string>
+    <string name="slideshow">Diashow</string>
+
+    <!-- Duplicates -->
+    <string name="finding_duplicates">Deine Fotos werden auf dem Smartphone verglichen…</string>
+    <string name="no_duplicates">Keine Duplikate gefunden</string>
+    <string name="keep_best">Bestes behalten</string>
+    <string name="best">BESTES</string>
+    <plurals name="similar_count">
+        <item quantity="one">%1$d ähnliches Foto</item>
+        <item quantity="other">%1$d ähnliche Fotos</item>
+    </plurals>
+
+    <!-- Vault -->
+    <string name="vault_empty">Der Tresor ist leer</string>
+    <string name="vault_body">Wähle Fotos oder Videos aus und tippe auf das Schloss, um sie hierher zu verschieben. Sie werden in GalleryCtrl verschlüsselt und aus deiner Mediathek entfernt, sodass andere Apps sie nicht sehen.</string>
+    <string name="vault_hint">Verschlüsselt mit einem Schlüssel in der sicheren Hardware dieses Smartphones. Tippe auf ein Element, um es anzusehen, wiederherzustellen oder zu löschen.</string>
+    <string name="vault_restore">In der Mediathek wiederherstellen</string>
+    <string name="vault_delete">Löschen</string>
+    <string name="vault_delete_title">Aus dem Tresor löschen?</string>
+    <string name="vault_delete_body">Das ist die einzige Kopie. Sie kann nicht wiederhergestellt werden.</string>
+
+    <!-- Viewer -->
+    <string name="more">Mehr</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="info">Info</string>
+    <string name="set_as">Festlegen als</string>
+    <string name="slideshow_stop">ZUM BEENDEN TIPPEN</string>
+    <string name="info_name">Name</string>
+    <string name="info_date">Datum</string>
+    <string name="info_size">Größe</string>
+    <string name="info_duration">Länge</string>
+    <string name="info_folder">Ordner</string>
+    <string name="info_camera">Kamera</string>
+    <string name="info_lens">Objektiv</string>
+    <string name="info_exposure">Belichtung</string>
+    <string name="info_location">Ort</string>
+
+    <!-- Settings -->
+    <string name="group_library">Mediathek</string>
+    <string name="on_this_day_setting">An diesem Tag</string>
+    <string name="on_this_day_sub">Fotos und Videos von diesem Datum aus früheren Jahren, oben in Fotos</string>
+    <string name="slideshow_interval">Diashow-Tempo</string>
+    <string name="slide_2">2 Sekunden</string>
+    <string name="slide_4">4 Sekunden</string>
+    <string name="slide_8">8 Sekunden</string>
+    <string name="lock_vault">PIN für den Tresor abfragen</string>
+    <string name="lock_vault_sub">Verwendet PIN oder Fingerabdruck der App-Sperre</string>
+    <string name="vault_footer">Der Tresor ist mit AES-256 und einem Schlüssel in der sicheren Hardware dieses Smartphones verschlüsselt. Er ist nicht in Sicherungen enthalten.</string>
+
+    <!-- Pinned and hidden folders -->
+    <string name="album_options">Ordneroptionen</string>
+    <string name="album_pinned">Angeheftet</string>
+    <string name="album_pin">Oben anheften</string>
+    <string name="album_pin_sub">Diesen Ordner in Alben zuerst anzeigen</string>
+    <string name="album_unpin">Loslösen</string>
+    <string name="album_unpin_sub">Diesen Ordner wieder in die übliche Reihenfolge setzen</string>
+    <string name="album_hide">Ordner ausblenden</string>
+    <string name="album_hide_sub">Aus Fotos, Alben, Suche, An diesem Tag und Duplikaten heraushalten. In den Einstellungen wieder einblenden.</string>
+    <string name="hidden_folders">Ausgeblendete Ordner</string>
+    <string name="hidden_folders_sub">Aus den Rastern herausgehaltene Ordner; tippe, um einen wieder anzuzeigen</string>
+    <string name="hidden_folders_empty">Keine Ordner ausgeblendet. Halte in Alben einen Ordner gedrückt, um ihn auszublenden.</string>
+    <string name="hidden_folder_show">Zum Einblenden tippen</string>
+    <string name="hidden_folder_gone">Ordner nicht mehr auf dem Smartphone</string>
+    <string name="hidden_folder_forget">Zum Vergessen tippen</string>
+    <string name="hidden_folders_footer">Ausblenden räumt nur GalleryCtrl auf: Die Dateien bleiben, wo sie sind, andere Apps sehen sie weiterhin und ausgeblendete Ordner sind nicht gesperrt. Verwende den Tresor für private Fotos.</string>
+
+    <!-- Storage -->
+    <string name="storage_title">Speicher</string>
+    <string name="storage_counting">Deine Mediathek wird zusammengezählt…</string>
+    <string name="storage_library">MEDIATHEK</string>
+    <string name="storage_phone_free">FREI AUF DEM SMARTPHONE</string>
+    <string name="storage_of_total">von %1$s</string>
+    <string name="storage_photos">FOTOS</string>
+    <string name="storage_videos">VIDEOS</string>
+    <string name="storage_share">DES BELEGTEN SPEICHERS</string>
+    <string name="storage_share_sub">von der Mediathek belegt</string>
+    <string name="storage_by_folder">NACH ORDNER</string>
+    <string name="storage_by_type">NACH DATEITYP</string>
+    <string name="storage_largest">GRÖSSTE DATEIEN</string>
+    <string name="storage_note">Die Größen stammen aus der Mediathek von Android. Ausgeblendete Ordner werden mitgezählt. Der Tresor liegt in GalleryCtrl.</string>
+    <plurals name="storage_items">
+        <item quantity="one">%1$d Element</item>
+        <item quantity="other">%1$d Elemente</item>
+    </plurals>
+
+    <!-- Move, copy, rename -->
+    <string name="move_to">Verschieben nach…</string>
+    <string name="copy_to">Kopieren nach…</string>
+    <string name="move_to_title">In Ordner verschieben</string>
+    <string name="copy_to_title">In Ordner kopieren</string>
+    <string name="move">Verschieben</string>
+    <string name="copy">Kopieren</string>
+    <string name="rename">Umbenennen</string>
+    <string name="new_folder">Neuer Ordner</string>
+    <string name="new_folder_sub">Erstellt in %1$s</string>
+    <string name="folder_name">Ordnername</string>
+    <string name="file_name">Dateiname</string>
+    <string name="rename_hint">Name (die Endung .%1$s bleibt)</string>
+    <string name="renamed">Umbenannt</string>
+    <string name="rename_failed">Umbenennen fehlgeschlagen. Gibt es schon eine Datei mit diesem Namen?</string>
+    <string name="organize_failed">Android konnte nicht um Erlaubnis zum Ändern dieser Dateien bitten</string>
+    <string name="organize_partly">%1$d von %2$d erledigt; die anderen konnten dort nicht geändert werden</string>
+    <plurals name="moved_count">
+        <item quantity="one">%1$d Element verschoben</item>
+        <item quantity="other">%1$d Elemente verschoben</item>
+    </plurals>
+    <plurals name="copied_count">
+        <item quantity="one">%1$d Element kopiert</item>
+        <item quantity="other">%1$d Elemente kopiert</item>
+    </plurals>
+    <plurals name="copying_count">
+        <item quantity="one">%1$d Element wird kopiert…</item>
+        <item quantity="other">%1$d Elemente werden kopiert…</item>
+    </plurals>
+
+    <!-- Video player -->
+    <string name="video_frame_back">Ein Bild zurück</string>
+    <string name="video_frame_forward">Ein Bild vor</string>
+    <string name="video_speed">Wiedergabegeschwindigkeit</string>
+
+    <!-- Opened from other apps, and the picker -->
+    <string name="close">Schließen</string>
+    <string name="external_unreadable">Diese Datei kann nicht geöffnet werden</string>
+    <string name="external_unreadable_body">Die App, die sie gesendet hat, hat GalleryCtrl keinen Zugriff gegeben, oder die Datei ist weg.</string>
+    <string name="pick_photo">Foto auswählen</string>
+    <string name="pick_photos">Fotos auswählen</string>
+    <string name="pick_video">Video auswählen</string>
+    <string name="pick_videos">Videos auswählen</string>
+    <string name="pick_item">Foto oder Video auswählen</string>
+    <string name="pick_items">Fotos und Videos auswählen</string>
+    <string name="pick_folder">Ordner</string>
+    <string name="pick_all_folders">Alle Ordner</string>
+    <string name="pick_nothing">Hier ist nichts, was diese App annehmen kann</string>
+    <string name="pick_done">Fertig</string>
+
+    <!-- Back up and restore settings -->
+    <string name="backup_title">Sichern und wiederherstellen</string>
+    <string name="backup_footer">Nur die Einstellungen von GalleryCtrl kommen in die Datei: keine PIN, keine Schlüssel, kein Tresor und keine Fotos.</string>
+    <string name="backup_save">Einstellungen in einer Datei speichern</string>
+    <string name="backup_save_sub">Raster, An diesem Tag, Diashow, Datenschutzoptionen, ausgeblendete und angeheftete Ordner</string>
+    <string name="backup_restore">Einstellungen aus einer Datei wiederherstellen</string>
+    <string name="backup_restore_sub">Zeigt zuerst, was ersetzt wird</string>
+    <string name="backup_saved">Einstellungen gespeichert</string>
+    <string name="backup_save_failed">Datei konnte nicht gespeichert werden</string>
+    <string name="backup_read_failed">Datei konnte nicht gelesen werden</string>
+    <string name="backup_not_valid">Das ist keine GalleryCtrl-Einstellungsdatei</string>
+    <string name="backup_too_new">Diese Datei stammt von einer neueren GalleryCtrl-Version. Aktualisiere zuerst die App.</string>
+    <string name="backup_restore_title">Diese Einstellungen wiederherstellen?</string>
+    <string name="backup_restore_body">Gespeichert am %1$s.\n\nDas ersetzt deine Rastergröße, An diesem Tag und das Diashow-Tempo, deine ausgeblendeten Ordner (%2$s) und angehefteten Ordner (%3$s).\n\nDatenschutzeinstellungen können nur strenger werden: Die Datei kann In Screenshots ausblenden, In letzten Apps ausblenden und die Tresor-PIN einschalten oder Erneut sperren früher machen, aber nie umgekehrt. Die App-Sperre und deine PIN ändern sich nicht.</string>
+    <string name="backup_none">keine</string>
+    <string name="backup_restore_confirm">Wiederherstellen</string>
+    <string name="backup_restored">Einstellungen wiederhergestellt</string>
+</resources>

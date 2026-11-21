@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Bibliothèque, coffre, confidentialité et sauvegarde</string>
+    <string name="app_lock_subtitle">Demander un code (et, si vous le voulez, votre empreinte) à l\'ouverture de GalleryCtrl. Le coffre peut aussi le demander séparément.</string>
+    <string name="app_lock_footer">GalleryCtrl fonctionne entièrement hors ligne : aucune autorisation Internet, aucune statistique, aucun cloud ni service d\'IA. Vos photos restent là où elles sont sur ce téléphone.</string>
+    <string name="lock_prompt_subtitle">Vos photos</string>
+    <string name="lock_forgot_body">Le code ne peut pas être récupéré. GalleryCtrl va supprimer tout le contenu du coffre (c\'est ce que le verrouillage protège), réinitialiser ses paramètres et désactiver le verrouillage. Votre bibliothèque de photos elle-même n\'est pas touchée.</string>
+
+    <!-- Tabs -->
+    <string name="tab_photos">Photos</string>
+    <string name="tab_albums">Albums</string>
+
+    <!-- Access -->
+    <string name="access_title">Autoriser l\'accès aux photos et vidéos</string>
+    <string name="access_body">GalleryCtrl affiche les photos et vidéos de ce téléphone. Il les lit sur place et ne les envoie jamais nulle part.</string>
+    <string name="allow_access">Autoriser l\'accès</string>
+    <string name="open_permissions">Ouvrir les autorisations</string>
+    <string name="limited_access">Vous n\'avez autorisé que certaines photos.</string>
+    <string name="choose_more">EN CHOISIR PLUS</string>
+    <string name="limited_empty">GalleryCtrl ne voit que les photos que vous choisissez. Choisissez-en, ou autorisez toutes les photos dans les paramètres d\'Android.</string>
+    <string name="choose_photos">Choisir des photos</string>
+
+    <!-- Photos -->
+    <string name="today">Aujourd\'hui</string>
+    <string name="yesterday">Hier</string>
+    <string name="search">Rechercher</string>
+    <string name="search_hint">Nom, dossier ou date (ex. \"juin 2024\")</string>
+    <string name="no_results">Aucun résultat</string>
+    <string name="grid_size">Taille de la grille</string>
+    <string name="no_photos">Pas encore de photos</string>
+    <string name="no_photos_body">Les photos et vidéos que vous prenez ou enregistrez apparaissent ici.</string>
+    <string name="on_this_day">CE JOUR-LÀ</string>
+    <plurals name="years_ago_count">
+        <item quantity="one">IL Y A %1$d AN</item>
+        <item quantity="other">IL Y A %1$d ANS</item>
+    </plurals>
+    <plurals name="years_ago_lower">
+        <item quantity="one">il y a %1$d an</item>
+        <item quantity="other">il y a %1$d ans</item>
+    </plurals>
+    <string name="see_all">TOUT VOIR</string>
+    <string name="on_this_day_title">Ce jour-là</string>
+    <string name="on_this_day_empty">Rien à cette date pour l\'instant</string>
+    <string name="on_this_day_empty_body">Les photos et vidéos prises à cette date les années précédentes apparaissent ici.</string>
+    <string name="share">Partager</string>
+    <string name="favorite">Favori</string>
+    <string name="delete">Supprimer</string>
+    <string name="move_to_vault">Déplacer dans le coffre</string>
+    <string name="move_to_vault_sub">Chiffré dans GalleryCtrl ; retiré de la bibliothèque</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+
+    <!-- Albums -->
+    <string name="favorites">Favoris</string>
+    <string name="videos">Vidéos</string>
+    <string name="vault">Coffre</string>
+    <string name="duplicates">Doublons</string>
+    <string name="folders">DOSSIERS</string>
+    <string name="empty_album">Rien ici</string>
+    <string name="slideshow">Diaporama</string>
+
+    <!-- Duplicates -->
+    <string name="finding_duplicates">Comparaison de vos photos sur le téléphone…</string>
+    <string name="no_duplicates">Aucun doublon trouvé</string>
+    <string name="keep_best">Garder la meilleure</string>
+    <string name="best">MEILLEURE</string>
+    <plurals name="similar_count">
+        <item quantity="one">%1$d photo similaire</item>
+        <item quantity="other">%1$d photos similaires</item>
+    </plurals>
+
+    <!-- Vault -->
+    <string name="vault_empty">Le coffre est vide</string>
+    <string name="vault_body">Sélectionnez des photos ou vidéos et touchez le cadenas pour les déplacer ici. Elles sont chiffrées dans GalleryCtrl et retirées de votre bibliothèque, pour que les autres applis ne les voient pas.</string>
+    <string name="vault_hint">Chiffré avec une clé conservée dans le matériel sécurisé de ce téléphone. Touchez un élément pour l\'afficher, le restaurer ou le supprimer.</string>
+    <string name="vault_restore">Restaurer dans la bibliothèque</string>
+    <string name="vault_delete">Supprimer</string>
+    <string name="vault_delete_title">Supprimer du coffre ?</string>
+    <string name="vault_delete_body">C\'est la seule copie. Elle ne pourra pas être récupérée.</string>
+
+    <!-- Viewer -->
+    <string name="more">Plus</string>
+    <string name="edit">Modifier</string>
+    <string name="info">Infos</string>
+    <string name="set_as">Définir comme</string>
+    <string name="slideshow_stop">TOUCHEZ POUR ARRÊTER</string>
+    <string name="info_name">Nom</string>
+    <string name="info_date">Date</string>
+    <string name="info_size">Taille</string>
+    <string name="info_duration">Durée</string>
+    <string name="info_folder">Dossier</string>
+    <string name="info_camera">Appareil photo</string>
+    <string name="info_lens">Objectif</string>
+    <string name="info_exposure">Exposition</string>
+    <string name="info_location">Lieu</string>
+
+    <!-- Settings -->
+    <string name="group_library">Bibliothèque</string>
+    <string name="on_this_day_setting">Ce jour-là</string>
+    <string name="on_this_day_sub">Les photos et vidéos de cette date les années précédentes, en haut de Photos</string>
+    <string name="slideshow_interval">Vitesse du diaporama</string>
+    <string name="slide_2">2 secondes</string>
+    <string name="slide_4">4 secondes</string>
+    <string name="slide_8">8 secondes</string>
+    <string name="lock_vault">Demander le code pour le coffre</string>
+    <string name="lock_vault_sub">Utilise le code ou l\'empreinte du verrouillage de l\'appli</string>
+    <string name="vault_footer">Le coffre est chiffré en AES-256 avec une clé conservée dans le matériel sécurisé de ce téléphone. Il n\'est pas inclus dans les sauvegardes.</string>
+
+    <!-- Pinned and hidden folders -->
+    <string name="album_options">Options du dossier</string>
+    <string name="album_pinned">Épinglé</string>
+    <string name="album_pin">Épingler en haut</string>
+    <string name="album_pin_sub">Afficher ce dossier en premier dans Albums</string>
+    <string name="album_unpin">Désépingler</string>
+    <string name="album_unpin_sub">Remettre ce dossier dans l\'ordre habituel</string>
+    <string name="album_hide">Masquer le dossier</string>
+    <string name="album_hide_sub">L\'exclure de Photos, Albums, la recherche, Ce jour-là et les doublons. Réaffichez-le dans Paramètres.</string>
+    <string name="hidden_folders">Dossiers masqués</string>
+    <string name="hidden_folders_sub">Dossiers exclus des grilles ; touchez-en un pour le réafficher</string>
+    <string name="hidden_folders_empty">Aucun dossier n\'est masqué. Appuyez de manière prolongée sur un dossier dans Albums pour le masquer.</string>
+    <string name="hidden_folder_show">Touchez pour le réafficher</string>
+    <string name="hidden_folder_gone">Dossier absent du téléphone</string>
+    <string name="hidden_folder_forget">Touchez pour l\'oublier</string>
+    <string name="hidden_folders_footer">Masquer ne fait que ranger GalleryCtrl : les fichiers restent où ils sont, les autres applis les voient toujours et les dossiers masqués ne sont pas verrouillés. Utilisez le coffre pour les photos privées.</string>
+
+    <!-- Storage -->
+    <string name="storage_title">Stockage</string>
+    <string name="storage_counting">Calcul de la taille de votre bibliothèque…</string>
+    <string name="storage_library">BIBLIOTHÈQUE</string>
+    <string name="storage_phone_free">LIBRE SUR LE TÉLÉPHONE</string>
+    <string name="storage_of_total">sur %1$s</string>
+    <string name="storage_photos">PHOTOS</string>
+    <string name="storage_videos">VIDÉOS</string>
+    <string name="storage_share">DE L\'ESPACE UTILISÉ</string>
+    <string name="storage_share_sub">occupé par la bibliothèque</string>
+    <string name="storage_by_folder">PAR DOSSIER</string>
+    <string name="storage_by_type">PAR TYPE DE FICHIER</string>
+    <string name="storage_largest">PLUS GROS FICHIERS</string>
+    <string name="storage_note">Les tailles viennent de la médiathèque d\'Android. Les dossiers masqués sont comptés aussi. Le coffre est stocké dans GalleryCtrl.</string>
+    <plurals name="storage_items">
+        <item quantity="one">%1$d élément</item>
+        <item quantity="other">%1$d éléments</item>
+    </plurals>
+
+    <!-- Move, copy, rename -->
+    <string name="move_to">Déplacer vers…</string>
+    <string name="copy_to">Copier vers…</string>
+    <string name="move_to_title">Déplacer vers un dossier</string>
+    <string name="copy_to_title">Copier vers un dossier</string>
+    <string name="move">Déplacer</string>
+    <string name="copy">Copier</string>
+    <string name="rename">Renommer</string>
+    <string name="new_folder">Nouveau dossier</string>
+    <string name="new_folder_sub">Créé dans %1$s</string>
+    <string name="folder_name">Nom du dossier</string>
+    <string name="file_name">Nom du fichier</string>
+    <string name="rename_hint">Nom (l\'extension .%1$s est conservée)</string>
+    <string name="renamed">Renommé</string>
+    <string name="rename_failed">Impossible de renommer. Un fichier porte-t-il déjà ce nom ?</string>
+    <string name="organize_failed">Android n\'a pas pu demander l\'autorisation de modifier ces fichiers</string>
+    <string name="organize_partly">%1$d sur %2$d effectués ; les autres n\'ont pas pu y être modifiés</string>
+    <plurals name="moved_count">
+        <item quantity="one">%1$d élément déplacé</item>
+        <item quantity="other">%1$d éléments déplacés</item>
+    </plurals>
+    <plurals name="copied_count">
+        <item quantity="one">%1$d élément copié</item>
+        <item quantity="other">%1$d éléments copiés</item>
+    </plurals>
+    <plurals name="copying_count">
+        <item quantity="one">Copie de %1$d élément…</item>
+        <item quantity="other">Copie de %1$d éléments…</item>
+    </plurals>
+
+    <!-- Video player -->
+    <string name="video_frame_back">Une image en arrière</string>
+    <string name="video_frame_forward">Une image en avant</string>
+    <string name="video_speed">Vitesse de lecture</string>
+
+    <!-- Opened from other apps, and the picker -->
+    <string name="close">Fermer</string>
+    <string name="external_unreadable">Impossible d\'ouvrir ce fichier</string>
+    <string name="external_unreadable_body">L\'appli qui l\'a envoyé n\'a pas donné accès à GalleryCtrl, ou le fichier n\'existe plus.</string>
+    <string name="pick_photo">Choisir une photo</string>
+    <string name="pick_photos">Choisir des photos</string>
+    <string name="pick_video">Choisir une vidéo</string>
+    <string name="pick_videos">Choisir des vidéos</string>
+    <string name="pick_item">Choisir une photo ou une vidéo</string>
+    <string name="pick_items">Choisir des photos et des vidéos</string>
+    <string name="pick_folder">Dossier</string>
+    <string name="pick_all_folders">Tous les dossiers</string>
+    <string name="pick_nothing">Rien ici que cette appli puisse prendre</string>
+    <string name="pick_done">Terminé</string>
+
+    <!-- Back up and restore settings -->
+    <string name="backup_title">Sauvegarde et restauration</string>
+    <string name="backup_footer">Seuls les paramètres de GalleryCtrl vont dans le fichier : ni code, ni clés, ni coffre, ni photos.</string>
+    <string name="backup_save">Enregistrer les paramètres dans un fichier</string>
+    <string name="backup_save_sub">Grille, Ce jour-là, diaporama, options de confidentialité, dossiers masqués et épinglés</string>
+    <string name="backup_restore">Restaurer les paramètres depuis un fichier</string>
+    <string name="backup_restore_sub">Montre d\'abord ce qui sera remplacé</string>
+    <string name="backup_saved">Paramètres enregistrés</string>
+    <string name="backup_save_failed">Impossible d\'enregistrer le fichier</string>
+    <string name="backup_read_failed">Impossible de lire le fichier</string>
+    <string name="backup_not_valid">Ce n\'est pas un fichier de paramètres GalleryCtrl</string>
+    <string name="backup_too_new">Ce fichier vient d\'une version plus récente de GalleryCtrl. Mettez d\'abord l\'appli à jour.</string>
+    <string name="backup_restore_title">Restaurer ces paramètres ?</string>
+    <string name="backup_restore_body">Enregistré le %1$s.\n\nCela remplace la taille de la grille, Ce jour-là et la vitesse du diaporama, vos dossiers masqués (%2$s) et vos dossiers épinglés (%3$s).\n\nLes paramètres de confidentialité ne peuvent que devenir plus stricts : le fichier peut activer Masquer dans les captures, Masquer dans les applis récentes et le code du coffre, ou reverrouiller plus tôt, mais jamais l\'inverse. Le verrouillage de l\'appli et votre code ne changent pas.</string>
+    <string name="backup_none">aucun</string>
+    <string name="backup_restore_confirm">Restaurer</string>
+    <string name="backup_restored">Paramètres restaurés</string>
+</resources>

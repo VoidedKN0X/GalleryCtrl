@@ -5,8 +5,6 @@ import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
-import android.widget.MediaController
-import android.widget.VideoView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -17,6 +15,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,7 +33,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.FileCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -111,6 +116,7 @@ fun ViewerScreen() {
     var more by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val request = rememberMediaRequest()
+    val organize = rememberOrganize()
 
     LaunchedEffect(items.isEmpty()) { if (items.isEmpty() && source.isNotEmpty()) nav.back() }
     LaunchedEffect(slideshow) {
@@ -135,7 +141,7 @@ fun ViewerScreen() {
         HorizontalPager(pager, Modifier.fillMaxSize(), key = { items.getOrNull(it)?.id ?: it }) { page ->
             val item = items[page]
             if (item.isVideo) VideoPage(item, active = page == pager.currentPage)
-            else ZoomableImage(item.uri, onTap = { chrome = !chrome }, onHdr = { if (page == pager.currentPage) hdr = it })
+            else ZoomableImage(item.uri, onTap = { chrome = !chrome }, onHdr = { if (page == pager.currentPage) hdr = it }, mime = item.mime, active = page == pager.currentPage)
         }
         AnimatedVisibility(chrome && current != null, enter = fadeIn(), exit = fadeOut()) {
             val item = current ?: return@AnimatedVisibility
@@ -189,6 +195,9 @@ fun ViewerScreen() {
                     )
                 }
             })
+            GroupRow(stringResource(R.string.move_to), icon = Icons.AutoMirrored.Outlined.DriveFileMove, onClick = { more = false; organize.move(listOf(item)) })
+            GroupRow(stringResource(R.string.copy_to), icon = Icons.Outlined.FileCopy, onClick = { more = false; organize.copy(listOf(item)) })
+            GroupRow(stringResource(R.string.rename), icon = Icons.Outlined.DriveFileRenameOutline, onClick = { more = false; organize.rename(item) })
             GroupRow(stringResource(R.string.move_to_vault), stringResource(R.string.move_to_vault_sub), icon = Icons.Outlined.Lock, onClick = {
                 more = false
                 scope.launch {
@@ -200,6 +209,7 @@ fun ViewerScreen() {
         }
     }
     info?.let { InfoSheet(it) { info = null } }
+    OrganizeDialogs(organize)
 }
 
 /** Hands the photo or video to an editor: LumenCtrl if it's installed, otherwise any app that edits. */
@@ -219,7 +229,7 @@ private fun edit(context: android.content.Context, item: MediaItem) {
 
 /** A photo you can pinch or double-tap to zoom. Big photos (up to 200 MP) are decoded at screen size, then sharper when zoomed. */
 @Composable
-fun ZoomableImage(uri: Uri, onTap: () -> Unit, onHdr: (Boolean) -> Unit = {}) {
+fun ZoomableImage(uri: Uri, onTap: () -> Unit, onHdr: (Boolean) -> Unit = {}, mime: String? = null, active: Boolean = true) {
     val context = LocalContext.current
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -230,6 +240,10 @@ fun ZoomableImage(uri: Uri, onTap: () -> Unit, onHdr: (Boolean) -> Unit = {}) {
         value = withContext(Dispatchers.IO) { decode(context, uri, edge) } ?: value
     }
     LaunchedEffect(bitmap) { onHdr(bitmap?.hasGainmap() == true) }
+    // GIFs and animated WebP/AVIF play; a file with a single frame stays the still picture above.
+    val animation by produceState<android.graphics.drawable.AnimatedImageDrawable?>(null, uri, mime) {
+        value = if (mightAnimate(mime)) withContext(Dispatchers.IO) { decodeAnimation(context, uri, target) } else null
+    }
     val state = rememberTransformableState { zoom, pan, _ ->
         scale = (scale * zoom).coerceIn(1f, 8f)
         offset = if (scale == 1f) Offset.Zero else offset + pan * scale
@@ -245,12 +259,12 @@ fun ZoomableImage(uri: Uri, onTap: () -> Unit, onHdr: (Boolean) -> Unit = {}) {
             .transformable(state, canPan = { scale > 1f }),
         contentAlignment = Alignment.Center,
     ) {
-        bitmap?.let {
-            Image(
-                it.asImageBitmap(), null,
-                Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale; translationX = offset.x; translationY = offset.y },
-                contentScale = ContentScale.Fit,
-            )
+        val zoomed = Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale; translationX = offset.x; translationY = offset.y }
+        val anim = animation
+        if (anim != null) {
+            AnimatedImage(anim, playing = active, modifier = zoomed)
+        } else {
+            bitmap?.let { Image(it.asImageBitmap(), null, zoomed, contentScale = ContentScale.Fit) }
         }
     }
 }
@@ -278,24 +292,17 @@ private fun decodeFile(file: File, maxEdge: Int): Bitmap? = runCatching {
     }
 }.getOrNull()
 
-/** Video with Android's own player controls; pauses when you swipe away. */
+/** Video with Android's own player controls plus speed and frame steps; pauses when you swipe away. */
 @Composable
 private fun VideoPage(item: MediaItem, active: Boolean) {
-    VideoBox(item.uri, active)
+    VideoBox(item.uri, active, viewerBarsPadding())
 }
 
+/** Keeps a video and its controls clear of the viewer's top and bottom bars. */
 @Composable
-private fun VideoBox(uri: Uri, active: Boolean) {
-    val context = LocalContext.current
-    val view = remember { VideoView(context).apply { setMediaController(MediaController(context).also { it.setAnchorView(this) }) } }
-    DisposableEffect(uri) {
-        view.setVideoURI(uri)
-        onDispose { view.stopPlayback() }
-    }
-    LaunchedEffect(active) { if (active) view.start() else view.pause() }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        AndroidView({ view }, Modifier.fillMaxWidth())
-    }
+internal fun viewerBarsPadding(): PaddingValues {
+    val insets = WindowInsets.systemBars.asPaddingValues()
+    return PaddingValues(top = insets.calculateTopPadding() + 64.dp, bottom = insets.calculateBottomPadding() + 68.dp)
 }
 
 /** Details: date, size, resolution, camera, exposure and location (shown here only; never sent anywhere). */
@@ -356,7 +363,7 @@ fun VaultViewer(entry: VaultEntry, onClose: () -> Unit, onRestore: () -> Unit, o
         if (video) {
             // The player needs a file: a decrypted copy in the private cache, wiped when you leave the vault.
             val file by produceState<File?>(null, entry.id) { value = c.photoVault.open(entry) }
-            file?.let { f -> VideoBox(Uri.fromFile(f), active = true) }
+            file?.let { f -> VideoBox(Uri.fromFile(f), active = true, padding = viewerBarsPadding()) }
         } else {
             // Photos are decrypted in memory only.
             val bmp by produceState<Bitmap?>(null, entry.id) { value = c.photoVault.image(entry, 4096) }

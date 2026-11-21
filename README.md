@@ -20,7 +20,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Fast scroll:** drag the handle on the right edge of a long grid to jump through the years, with a month-and-year bubble
 - **Storage page:** how much space photos, videos, the vault, each folder and each file type take, the largest files, and the free space left on the phone
 - **Viewer:** swipe between photos, pinch or double-tap to zoom (very large photos, up to 200 MP, load sharper as you zoom), and Ultra HDR photos shown in HDR on HDR screens
-- **Video playback** with Android's own player controls
+- **Video playback** with Android's own player controls, playback speed (0.25× to 2×) and one-frame steps back and forward
+- **Animated pictures:** GIFs and animated WebP, AVIF and HEIF play in the viewer
+- **Move, copy and rename** photos and videos into any folder or a new one, through Android's own confirmation (no "all files" access)
 - **Info:** date, size and resolution, folder, camera, lens, exposure and the photo's location (shown on the phone only)
 - **Search** by file name, folder or date ("june 2024", "12 november")
 - **Select several** with a long-press: share, favourite, delete or move to the vault

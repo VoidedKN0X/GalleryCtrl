@@ -49,6 +49,10 @@ object MediaRequests {
     fun favorite(context: Context, items: List<MediaItem>, on: Boolean): PendingIntent =
         MediaStore.createFavoriteRequest(context.contentResolver, items.map { it.uri }, on)
 
+    /** Android's "Allow GalleryCtrl to modify…" confirmation, needed before moving or renaming files other apps made. */
+    fun write(context: Context, items: List<MediaItem>): PendingIntent =
+        MediaStore.createWriteRequest(context.contentResolver, items.map { it.uri })
+
     fun delete(context: Context, items: List<MediaItem>): PendingIntent =
         MediaStore.createDeleteRequest(context.contentResolver, items.map { it.uri })
 }

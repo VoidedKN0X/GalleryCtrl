@@ -37,7 +37,11 @@ import androidx.compose.foundation.lazy.items as rowItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.FileCopy
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Favorite
@@ -231,6 +235,8 @@ fun MediaGrid(
     val nav = LocalNavigator.current
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     var selected by remember { mutableStateOf(setOf<Long>()) }
+    var selectionMenu by remember { mutableStateOf(false) }
+    val organize = rememberOrganize()
     val request = rememberMediaRequest { selected = emptySet() }
     val scope = rememberCoroutineScope()
     val px = with(LocalDensity.current) { (360.dp / settings.columns).roundToPx() }.coerceAtLeast(96)
@@ -298,14 +304,24 @@ fun MediaGrid(
                         if (stored.isNotEmpty()) request(MediaRequests.delete(context, stored))
                     }
                 },
+                onMore = { selectionMenu = true },
                 onClear = { selected = emptySet() },
             )
+            if (selectionMenu) {
+                CtrlBottomSheet(onDismissRequest = { selectionMenu = false }) {
+                    GroupRow(stringResource(R.string.move_to), icon = Icons.AutoMirrored.Outlined.DriveFileMove, onClick = { selectionMenu = false; organize.move(sel) })
+                    GroupRow(stringResource(R.string.copy_to), icon = Icons.Outlined.FileCopy, onClick = { selectionMenu = false; organize.copy(sel) })
+                    if (sel.size == 1) GroupRow(stringResource(R.string.rename), icon = Icons.Outlined.DriveFileRenameOutline, onClick = { selectionMenu = false; organize.rename(sel.first()) })
+                    Spacer(Modifier.navigationBarsPadding().height(12.dp))
+                }
+            }
         }
+        OrganizeDialogs(organize) { selected = emptySet() }
     }
 }
 
 @Composable
-private fun SelectionBar(count: Int, modifier: Modifier, onShare: () -> Unit, onFavorite: () -> Unit, onDelete: () -> Unit, onVault: () -> Unit, onClear: () -> Unit) {
+private fun SelectionBar(count: Int, modifier: Modifier, onShare: () -> Unit, onFavorite: () -> Unit, onDelete: () -> Unit, onVault: () -> Unit, onMore: () -> Unit, onClear: () -> Unit) {
     Row(
         modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CtrlColors.Surface).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -318,6 +334,7 @@ private fun SelectionBar(count: Int, modifier: Modifier, onShare: () -> Unit, on
         CtrlSquareButton(Icons.Outlined.FavoriteBorder, stringResource(R.string.favorite), onFavorite)
         CtrlSquareButton(Icons.Outlined.Lock, stringResource(R.string.move_to_vault), onVault)
         CtrlSquareButton(Icons.Outlined.Delete, stringResource(R.string.delete), onDelete)
+        CtrlSquareButton(Icons.Outlined.MoreVert, stringResource(R.string.more), onMore)
     }
 }
 

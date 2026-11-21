@@ -144,4 +144,39 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
+
+    <!-- Move, copy, rename -->
+    <string name="move_to">Move to…</string>
+    <string name="copy_to">Copy to…</string>
+    <string name="move_to_title">Move to folder</string>
+    <string name="copy_to_title">Copy to folder</string>
+    <string name="move">Move</string>
+    <string name="copy">Copy</string>
+    <string name="rename">Rename</string>
+    <string name="new_folder">New folder</string>
+    <string name="new_folder_sub">Made in %1$s</string>
+    <string name="folder_name">Folder name</string>
+    <string name="file_name">File name</string>
+    <string name="rename_hint">Name (the .%1$s ending stays)</string>
+    <string name="renamed">Renamed</string>
+    <string name="rename_failed">Couldn\'t rename it. Is there already a file with that name?</string>
+    <string name="organize_failed">Android couldn\'t ask for permission to change these files</string>
+    <string name="organize_partly">%1$d of %2$d done; the others couldn\'t be changed there</string>
+    <plurals name="moved_count">
+        <item quantity="one">%1$d item moved</item>
+        <item quantity="other">%1$d items moved</item>
+    </plurals>
+    <plurals name="copied_count">
+        <item quantity="one">%1$d item copied</item>
+        <item quantity="other">%1$d items copied</item>
+    </plurals>
+    <plurals name="copying_count">
+        <item quantity="one">Copying %1$d item…</item>
+        <item quantity="other">Copying %1$d items…</item>
+    </plurals>
+
+    <!-- Video player -->
+    <string name="video_frame_back">One frame back</string>
+    <string name="video_frame_forward">One frame forward</string>
+    <string name="video_speed">Playback speed</string>
 </resources>

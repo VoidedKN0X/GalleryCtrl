@@ -15,7 +15,17 @@ import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.outlined.FolderOff
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.vknxworks.galleryctrl.ui.components.CtrlBottomSheet
+import com.vknxworks.galleryctrl.ui.theme.CtrlColors
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -59,6 +69,7 @@ fun SettingsScreen() {
                 GroupChoice(stringResource(R.string.grid_size), (2..6).map { it to it.toString() }, settings.columns, icon = Icons.Outlined.GridView) { v -> set { it.copy(columns = v) } }
                 GroupSwitch(stringResource(R.string.on_this_day_setting), stringResource(R.string.on_this_day_sub), settings.onThisDay, Icons.Outlined.History) { on -> set { it.copy(onThisDay = on) } }
                 GroupChoice(stringResource(R.string.slideshow_interval), SlideInterval.entries.map { it to stringResource(it.label) }, settings.slideInterval, icon = Icons.Outlined.Slideshow) { v -> set { it.copy(slideInterval = v) } }
+                HiddenFoldersRow(settings.hiddenAlbums)
             }
             Group(stringResource(R.string.vault), footer = stringResource(R.string.vault_footer)) {
                 GroupSwitch(stringResource(R.string.lock_vault), stringResource(R.string.lock_vault_sub), settings.lockVault, Icons.Outlined.Lock) { on -> set { it.copy(lockVault = on) } }
@@ -136,5 +147,45 @@ private fun PrivacyAndSecurityGroup(settings: AppSettings) {
             checked = settings.hideRecents,
             icon = Icons.Outlined.Layers,
         ) { on -> c.appScope.launch { c.settings.update { it.copy(hideRecents = on) } } }
+    }
+}
+
+/** Settings > Library > Hidden folders: the folders left out of the grids; tap one to show it again. */
+@Composable
+private fun HiddenFoldersRow(hidden: Set<Long>) {
+    val c = LocalContext.current.container
+    var open by remember { mutableStateOf(false) }
+    GroupRow(
+        stringResource(R.string.hidden_folders),
+        stringResource(R.string.hidden_folders_sub),
+        icon = Icons.Outlined.VisibilityOff,
+        value = hidden.size.toString(),
+        showChevron = true,
+        onClick = { open = true },
+    )
+    if (open) {
+        val all by c.media.items.collectAsStateWithLifecycle()
+        val names = remember(all, hidden) {
+            val byId = HashMap<Long, String>()
+            for (item in all) if (item.albumId in hidden && item.albumId !in byId) byId[item.albumId] = item.album
+            byId
+        }
+        CtrlBottomSheet(onDismissRequest = { open = false }) {
+            Text(stringResource(R.string.hidden_folders), style = MaterialTheme.typography.titleLarge, color = CtrlColors.Text, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+            if (hidden.isEmpty()) {
+                Text(stringResource(R.string.hidden_folders_empty), style = MaterialTheme.typography.bodyMedium, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
+            }
+            hidden.sortedBy { names[it]?.lowercase() ?: "\uFFFF" }.forEach { id ->
+                val name = names[id]
+                GroupRow(
+                    name?.ifBlank { "—" } ?: stringResource(R.string.hidden_folder_gone),
+                    stringResource(if (name != null) R.string.hidden_folder_show else R.string.hidden_folder_forget),
+                    icon = if (name != null) Icons.Outlined.Visibility else Icons.Outlined.FolderOff,
+                    onClick = { c.appScope.launch { c.settings.update { s -> s.copy(hiddenAlbums = s.hiddenAlbums - id) } } },
+                )
+            }
+            Text(stringResource(R.string.hidden_folders_footer), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
+            Spacer(Modifier.navigationBarsPadding().height(12.dp))
+        }
     }
 }

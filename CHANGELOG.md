@@ -4,6 +4,19 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Changes on `main` that aren't in a release yet. They ship with the next version. Built and checked by CI only; none of it has been run on a phone yet.
+
+### New
+
+- **Pin folders to the top of Albums.** Long-press a folder in **Albums** and tap *Pin to the top*. Pinned folders come first, in the order you pinned them, with a small pin on their picture. Long-press again and tap *Unpin* to put one back in the usual order.
+- **Hide folders.** Long-press a folder in **Albums** and tap *Hide folder* (for example a chat app's stickers or a game's screenshots). Its photos and videos are then left out of Photos, Albums, Favourites, Videos, search, On this day and the duplicate finder. **Settings > Library > Hidden folders** lists them; tap one to show it again (a folder that no longer exists on the phone can be forgotten the same way).
+  - Hiding only tidies up GalleryCtrl. The files stay where they are, nothing is moved or locked, and other apps still see them. Use the vault for private photos.
+  - At start, the grids wait until your settings are read, so a hidden folder doesn't show for a moment.
+- **Fast scroll with a date bubble.** In Photos, albums, search results and On this day, a handle appears on the right edge while you scroll a long grid (120 items or more). Drag it to jump through the library; a bubble next to your finger shows the month and year you're at. It fades out a moment after scrolling stops.
+- **Storage page.** **Albums > Storage** shows how much space your library takes: in total, photos and videos separately, the vault, how much is still free on the phone and what share of the used space is your library. Below that: the 12 biggest folders and file types (JPEG, HEIC, MP4, …) with a bar for their share, and the 20 largest files; tap one to open it. Everything is added up on the phone from the sizes Android's media library already knows; no file is read for it. Hidden folders are counted too, since they take space all the same. The free space comes from Android and needs no permission.
+
 ## v0.4.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there.

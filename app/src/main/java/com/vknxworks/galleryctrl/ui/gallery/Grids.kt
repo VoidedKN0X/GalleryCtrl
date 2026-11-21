@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as rowItems
 import androidx.compose.foundation.shape.CircleShape
@@ -46,11 +47,14 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Slideshow
 import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -91,7 +95,9 @@ import com.vknxworks.galleryctrl.media.Sharing
 import com.vknxworks.galleryctrl.media.VaultEntry
 import com.vknxworks.galleryctrl.ui.common.hasPermission
 import com.vknxworks.galleryctrl.ui.common.openAppSettings
+import com.vknxworks.galleryctrl.ui.components.CtrlBottomSheet
 import com.vknxworks.galleryctrl.ui.components.CtrlButton
+import com.vknxworks.galleryctrl.ui.components.GroupRow
 import com.vknxworks.galleryctrl.ui.components.CtrlSquareButton
 import com.vknxworks.galleryctrl.ui.components.CtrlTextField
 import com.vknxworks.galleryctrl.ui.components.MessageView
@@ -105,6 +111,7 @@ import com.vknxworks.galleryctrl.ui.nav.DuplicatesRoute
 import com.vknxworks.galleryctrl.ui.nav.LocalNavigator
 import com.vknxworks.galleryctrl.ui.nav.OnThisDayRoute
 import com.vknxworks.galleryctrl.ui.nav.SearchRoute
+import com.vknxworks.galleryctrl.ui.nav.StorageRoute
 import com.vknxworks.galleryctrl.ui.nav.VaultRoute
 import com.vknxworks.galleryctrl.ui.nav.ViewerRoute
 import com.vknxworks.galleryctrl.ui.theme.CtrlColors
@@ -233,6 +240,10 @@ fun MediaGrid(
     val groups = remember<List<Pair<Any, List<MediaItem>>>>(items, sections, groupByDay, zone) {
         sections ?: if (groupByDay) items.groupBy { dayOf(it.date, zone) }.toList() else listOf(LocalDate.MIN to items)
     }
+    val showHeadings = sections != null || groupByDay
+    // Where every grid position is in time, for the fast-scroll bubble.
+    val dates = remember(groups, showHeadings) { gridDates(groups.map { (_, l) -> l.map { it.date } }, showHeadings) }
+    val gridState = rememberLazyGridState()
 
     fun open(item: MediaItem) {
         c.viewerList.value = items
@@ -245,13 +256,14 @@ fun MediaGrid(
         LazyVerticalGrid(
             columns = GridCells.Fixed(settings.columns),
             modifier = Modifier.fillMaxSize(),
+            state = gridState,
             contentPadding = PaddingValues(bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             header?.invoke(this)
             groups.forEach { (day, list) ->
-                if (sections != null || groupByDay) {
+                if (showHeadings) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "h$day", contentType = "header") {
                         Text(if (day is LocalDate) dayLabel(day) else day.toString(), style = MaterialTheme.typography.titleSmall, color = CtrlColors.Text, modifier = Modifier.padding(start = Gutter, top = 18.dp, bottom = 8.dp))
                     }
@@ -271,6 +283,7 @@ fun MediaGrid(
                 }
             }
         }
+        FastScroller(gridState, dates, Modifier.align(Alignment.TopEnd).padding(bottom = 120.dp))
         if (selected.isNotEmpty()) {
             val sel = items.filter { it.id in selected }
             SelectionBar(
@@ -317,10 +330,11 @@ fun PhotosScreen() {
     val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     MediaAccess { limited, pickMore ->
-        val items by c.media.items.collectAsStateWithLifecycle()
-        val loading by c.media.loading.collectAsStateWithLifecycle()
+        val library by c.visible.collectAsStateWithLifecycle()
+        val items = library.items
+        val loading = library.loading
         // While the library is read for the first time, the newest photos show as soon as they're in.
-        val firstRows by c.media.firstRows.collectAsStateWithLifecycle()
+        val firstRows by c.visibleFirstRows.collectAsStateWithLifecycle()
         val shown = if (loading && items.isEmpty()) firstRows else items
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val memories = rememberOnThisDay(items, settings.onThisDay)
@@ -420,7 +434,7 @@ private fun Memories(memories: List<Pair<MediaItem, LocalDate>>, onSeeAll: () ->
 @Composable
 fun OnThisDayScreen() {
     val c = LocalContext.current.container
-    val items by c.media.items.collectAsStateWithLifecycle()
+    val items = c.visible.collectAsStateWithLifecycle().value.items
     val memories = rememberOnThisDay(items)
     val today = LocalDate.now()
     val fmt = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
@@ -438,15 +452,19 @@ fun OnThisDayScreen() {
     }
 }
 
-/** The Albums tab: collections (favourites, videos, vault, duplicates) and every folder. */
+/** The Albums tab: collections (favourites, videos, vault, duplicates, storage) and every folder, pinned ones first. */
 @Composable
 fun AlbumsScreen() {
     val c = LocalContext.current.container
     val nav = LocalNavigator.current
+    val scope = rememberCoroutineScope()
     MediaAccess { _, _ ->
-        val items by c.media.items.collectAsStateWithLifecycle()
+        val items = c.visible.collectAsStateWithLifecycle().value.items
         val vault by c.photoVault.entries.collectAsStateWithLifecycle()
-        val albums = remember(items) { c.media.albums(items) }
+        val settings by c.settings.settings.collectAsStateWithLifecycle()
+        val pinned = settings.pinnedAlbums
+        val albums = remember(items, pinned) { pinnedFirst(c.media.albums(items), pinned) }
+        var menuFor by remember { mutableStateOf<Album?>(null) }
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TabTitle(stringResource(R.string.tab_albums))
             LazyVerticalGrid(
@@ -461,14 +479,55 @@ fun AlbumsScreen() {
                         CollectionRow(Icons.Outlined.Lock, stringResource(R.string.vault), vault.size) { nav.navigate(VaultRoute) }
                         CollectionRow(Icons.Outlined.ContentCopy, stringResource(R.string.duplicates), null) { nav.navigate(DuplicatesRoute) }
                         CollectionRow(Icons.Outlined.History, stringResource(R.string.on_this_day_title), null) { nav.navigate(OnThisDayRoute) }
+                        CollectionRow(Icons.Outlined.PieChart, stringResource(R.string.storage_title), null) { nav.navigate(StorageRoute) }
                         Spacer(Modifier.height(12.dp))
                         SectionLabel(stringResource(R.string.folders))
                         Spacer(Modifier.height(8.dp))
                     }
                 }
-                items(albums, key = { it.id }) { a -> AlbumCard(a) { nav.navigate(AlbumRoute("album", a.id, a.name)) } }
+                items(albums, key = { it.id }) { a ->
+                    AlbumCard(a, pinned = a.id in pinned, onLongClick = { menuFor = a }) { nav.navigate(AlbumRoute("album", a.id, a.name)) }
+                }
             }
         }
+        menuFor?.let { a ->
+            AlbumMenu(
+                a, pinned = a.id in pinned, onDismiss = { menuFor = null },
+                onPin = { on ->
+                    menuFor = null
+                    scope.launch { c.settings.update { s -> s.copy(pinnedAlbums = if (on) s.pinnedAlbums - a.id + a.id else s.pinnedAlbums - a.id) } }
+                },
+                onHide = {
+                    menuFor = null
+                    scope.launch { c.settings.update { s -> s.copy(hiddenAlbums = s.hiddenAlbums + a.id, pinnedAlbums = s.pinnedAlbums - a.id) } }
+                },
+            )
+        }
+    }
+}
+
+/** Pinned folders first, in the order they were pinned; then the rest in the usual order. */
+internal fun pinnedFirst(albums: List<Album>, pinned: List<Long>): List<Album> {
+    if (pinned.isEmpty()) return albums
+    val byId = albums.associateBy { it.id }
+    val first = pinned.mapNotNull { byId[it] }
+    val ids = first.map { it.id }.toSet()
+    return first + albums.filterNot { it.id in ids }
+}
+
+/** Long-press on a folder: pin it to the top of Albums, or hide it. */
+@Composable
+private fun AlbumMenu(a: Album, pinned: Boolean, onDismiss: () -> Unit, onPin: (Boolean) -> Unit, onHide: () -> Unit) {
+    CtrlBottomSheet(onDismissRequest = onDismiss) {
+        Text(a.name.ifBlank { "—" }, style = MaterialTheme.typography.titleLarge, color = CtrlColors.Text, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+        GroupRow(
+            stringResource(if (pinned) R.string.album_unpin else R.string.album_pin),
+            stringResource(if (pinned) R.string.album_unpin_sub else R.string.album_pin_sub),
+            icon = Icons.Outlined.PushPin,
+            onClick = { onPin(!pinned) },
+        )
+        GroupRow(stringResource(R.string.album_hide), stringResource(R.string.album_hide_sub), icon = Icons.Outlined.VisibilityOff, onClick = onHide)
+        Spacer(Modifier.navigationBarsPadding().height(12.dp))
     }
 }
 
@@ -486,9 +545,17 @@ private fun CollectionRow(icon: androidx.compose.ui.graphics.vector.ImageVector,
 }
 
 @Composable
-private fun AlbumCard(a: Album, onClick: () -> Unit) {
-    Column(Modifier.padding(6.dp).clickable(onClick = onClick)) {
-        Thumb(a.cover, 480, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)))
+private fun AlbumCard(a: Album, pinned: Boolean, onLongClick: () -> Unit, onClick: () -> Unit) {
+    Column(Modifier.padding(6.dp).combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = stringResource(R.string.album_options))) {
+        Box {
+            Thumb(a.cover, 480, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)))
+            if (pinned) {
+                Icon(
+                    Icons.Outlined.PushPin, stringResource(R.string.album_pinned), tint = Color.White,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).padding(5.dp).size(16.dp),
+                )
+            }
+        }
         Spacer(Modifier.height(6.dp))
         Text(a.name.ifBlank { "—" }, style = MaterialTheme.typography.bodyMedium, color = CtrlColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(a.count.toString(), style = CtrlType.Data, color = CtrlColors.Muted)
@@ -499,7 +566,7 @@ private fun AlbumCard(a: Album, onClick: () -> Unit) {
 @Composable
 fun AlbumScreen(route: AlbumRoute) {
     val c = LocalContext.current.container
-    val items by c.media.items.collectAsStateWithLifecycle()
+    val items = c.visible.collectAsStateWithLifecycle().value.items
     val list = remember(items, route) {
         when (route.kind) {
             "favorites" -> items.filter { it.favorite }
@@ -533,7 +600,7 @@ fun AlbumScreen(route: AlbumRoute) {
 @Composable
 fun SearchScreen() {
     val c = LocalContext.current.container
-    val items by c.media.items.collectAsStateWithLifecycle()
+    val items = c.visible.collectAsStateWithLifecycle().value.items
     var query by remember { mutableStateOf("") }
     /** The query [shown] was last worked out for; "No results" waits for it, so it doesn't flash while matching. */
     var searched by remember { mutableStateOf("") }
@@ -570,7 +637,7 @@ fun SearchScreen() {
 fun DuplicatesScreen() {
     val context = LocalContext.current
     val c = context.container
-    val items by c.media.items.collectAsStateWithLifecycle()
+    val items = c.visible.collectAsStateWithLifecycle().value.items
     var progress by remember { mutableStateOf(0f) }
     var groups by remember { mutableStateOf<List<List<MediaItem>>?>(null) }
     val request = rememberMediaRequest()

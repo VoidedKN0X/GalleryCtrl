@@ -186,6 +186,7 @@ private fun AppNavHost(navController: NavHostController) {
         composable<DuplicatesRoute> { DuplicatesScreen() }
         composable<SearchRoute> { SearchScreen() }
         composable<OnThisDayRoute> { OnThisDayScreen() }
+        composable<StorageRoute> { StorageScreen() }
         composable<YouRoute> { YouScreen() }
         composable<SettingsRoute> { SettingsScreen() }
     }

@@ -15,7 +15,10 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Works fully offline.** GalleryCtrl doesn't have the internet permission and never goes online
 - **Photos tab:** everything newest first, grouped by day, with 2 to 6 columns
 - **On this day:** photos and videos from this date in earlier years, as a row at the top of Photos and as a page of their own (Albums > On this day), grouped by year. A photo counts on the day it was taken where it was taken, using the camera's own clock, so holiday photos from another time zone land on the right day; photos from 29 February show on 28 February in other years
-- **Albums tab:** every folder, plus Favourites, Videos, the Vault and Duplicates
+- **Albums tab:** every folder, plus Favourites, Videos, the Vault, Duplicates and Storage
+- **Pin and hide folders:** long-press a folder to pin it to the top of Albums, or hide it from Photos, Albums, search, On this day and duplicates (Settings > Library > Hidden folders shows it again; hiding doesn't move or lock anything)
+- **Fast scroll:** drag the handle on the right edge of a long grid to jump through the years, with a month-and-year bubble
+- **Storage page:** how much space photos, videos, the vault, each folder and each file type take, the largest files, and the free space left on the phone
 - **Viewer:** swipe between photos, pinch or double-tap to zoom (very large photos, up to 200 MP, load sharper as you zoom), and Ultra HDR photos shown in HDR on HDR screens
 - **Video playback** with Android's own player controls
 - **Info:** date, size and resolution, folder, camera, lens, exposure and the photo's location (shown on the phone only)

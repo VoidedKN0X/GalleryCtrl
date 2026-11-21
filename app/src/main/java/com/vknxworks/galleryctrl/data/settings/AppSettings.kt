@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.vknxworks.galleryctrl.R
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -47,6 +49,10 @@ data class AppSettings(
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     val hideScreenshots: Boolean = false,
     val hideRecents: Boolean = false,
+    /** Folders (MediaStore bucket ids) left out of Photos, Albums, search, On this day and duplicates. */
+    val hiddenAlbums: Set<Long> = emptySet(),
+    /** Folders shown first in Albums, in this order. */
+    val pinnedAlbums: List<Long> = emptyList(),
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -58,6 +64,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
+        val hiddenAlbums = stringSetPreferencesKey("hidden_albums")
+        /** Comma-separated bucket ids, in pin order. */
+        val pinnedAlbums = stringPreferencesKey("pinned_albums")
         /** Left by versions that had the photo map; only [removeMapLeftovers] touches it. */
         val legacyMapFile = stringPreferencesKey("map_file")
     }
@@ -78,7 +87,15 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
+        hiddenAlbums = this[K.hiddenAlbums].orEmpty().mapNotNull { it.toLongOrNull() }.toSet(),
+        pinnedAlbums = this[K.pinnedAlbums].orEmpty().split(',').mapNotNull { it.trim().toLongOrNull() }.distinct(),
     )
+
+    /**
+     * The hidden folders, straight from storage: emits only once the saved settings are read, so hidden photos
+     * never show for a moment at start while the settings are still loading.
+     */
+    val hiddenAlbums: Flow<Set<Long>> = prefs.map { it.toSettings().hiddenAlbums }.distinctUntilChanged()
 
     /** Saves a change. If the phone's storage fails, the change is dropped instead of closing the app. */
     suspend fun update(transform: (AppSettings) -> AppSettings) {
@@ -92,6 +109,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 p[K.lockTimeout] = s.lockTimeout.name
                 p[K.hideScreenshots] = s.hideScreenshots
                 p[K.hideRecents] = s.hideRecents
+                p[K.hiddenAlbums] = s.hiddenAlbums.map { it.toString() }.toSet()
+                p[K.pinnedAlbums] = s.pinnedAlbums.distinct().joinToString(",")
             }
         } catch (e: IOException) {
             // Nothing to do: the settings stay as they were.

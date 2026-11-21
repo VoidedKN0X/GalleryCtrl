@@ -108,4 +108,40 @@
     <string name="lock_vault">Ask for the PIN for the vault</string>
     <string name="lock_vault_sub">Uses the app lock\'s PIN or fingerprint</string>
     <string name="vault_footer">The vault is encrypted with AES-256 and a key held in this phone\'s secure hardware. It isn\'t included in backups.</string>
+
+    <!-- Pinned and hidden folders -->
+    <string name="album_options">Folder options</string>
+    <string name="album_pinned">Pinned</string>
+    <string name="album_pin">Pin to the top</string>
+    <string name="album_pin_sub">Show this folder first in Albums</string>
+    <string name="album_unpin">Unpin</string>
+    <string name="album_unpin_sub">Put this folder back in the usual order</string>
+    <string name="album_hide">Hide folder</string>
+    <string name="album_hide_sub">Leave it out of Photos, Albums, search, On this day and duplicates. Show it again in Settings.</string>
+    <string name="hidden_folders">Hidden folders</string>
+    <string name="hidden_folders_sub">Folders left out of the grids; tap to show one again</string>
+    <string name="hidden_folders_empty">No folders are hidden. Long-press a folder in Albums to hide it.</string>
+    <string name="hidden_folder_show">Tap to show it again</string>
+    <string name="hidden_folder_gone">Folder no longer on the phone</string>
+    <string name="hidden_folder_forget">Tap to forget it</string>
+    <string name="hidden_folders_footer">Hiding only tidies up GalleryCtrl: the files stay where they are, other apps still see them and hidden folders are not locked. Use the vault for private photos.</string>
+
+    <!-- Storage -->
+    <string name="storage_title">Storage</string>
+    <string name="storage_counting">Adding up your library…</string>
+    <string name="storage_library">LIBRARY</string>
+    <string name="storage_phone_free">FREE ON PHONE</string>
+    <string name="storage_of_total">of %1$s</string>
+    <string name="storage_photos">PHOTOS</string>
+    <string name="storage_videos">VIDEOS</string>
+    <string name="storage_share">OF USED SPACE</string>
+    <string name="storage_share_sub">taken by the library</string>
+    <string name="storage_by_folder">BY FOLDER</string>
+    <string name="storage_by_type">BY FILE TYPE</string>
+    <string name="storage_largest">LARGEST FILES</string>
+    <string name="storage_note">Sizes come from Android\'s media library. Hidden folders are counted too. The vault is stored inside GalleryCtrl.</string>
+    <plurals name="storage_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
 </resources>

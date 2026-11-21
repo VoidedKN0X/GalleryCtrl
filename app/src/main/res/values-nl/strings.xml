@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Bibliotheek, kluis, privacy en back-up</string>
+    <string name="app_lock_subtitle">Vraag een app-pincode (en eventueel je vingerafdruk) wanneer je GalleryCtrl opent. De kluis kan er ook zelf om vragen.</string>
+    <string name="app_lock_footer">GalleryCtrl werkt volledig offline: geen internettoestemming, geen analytics, geen cloud en geen AI-dienst. Je foto\'s blijven waar ze staan op deze telefoon.</string>
+    <string name="lock_prompt_subtitle">Je foto\'s</string>
+    <string name="lock_forgot_body">De pincode kan niet hersteld worden. GalleryCtrl wist alles in de kluis (dat is wat de vergrendeling beschermt), zet de instellingen terug en zet de app-vergrendeling uit. Je fotobibliotheek zelf blijft onaangeroerd.</string>
+
+    <!-- Tabs -->
+    <string name="tab_photos">Foto\'s</string>
+    <string name="tab_albums">Albums</string>
+
+    <!-- Access -->
+    <string name="access_title">Geef toegang tot foto\'s en video\'s</string>
+    <string name="access_body">GalleryCtrl toont de foto\'s en video\'s op deze telefoon. Ze worden gelezen waar ze staan en nooit ergens naartoe gestuurd.</string>
+    <string name="allow_access">Toegang geven</string>
+    <string name="open_permissions">Toestemmingen openen</string>
+    <string name="limited_access">Je hebt maar een deel van je foto\'s toegestaan.</string>
+    <string name="choose_more">MEER KIEZEN</string>
+    <string name="limited_empty">GalleryCtrl ziet alleen de foto\'s die je kiest. Kies er een paar, of sta alle foto\'s toe in de instellingen van Android.</string>
+    <string name="choose_photos">Foto\'s kiezen</string>
+
+    <!-- Photos -->
+    <string name="today">Vandaag</string>
+    <string name="yesterday">Gisteren</string>
+    <string name="search">Zoeken</string>
+    <string name="search_hint">Naam, map of datum (bv. \"juni 2024\")</string>
+    <string name="no_results">Niets gevonden</string>
+    <string name="grid_size">Rastergrootte</string>
+    <string name="no_photos">Nog geen foto\'s</string>
+    <string name="no_photos_body">Foto\'s en video\'s die je maakt of bewaart, komen hier.</string>
+    <string name="on_this_day">OP DEZE DAG</string>
+    <plurals name="years_ago_count">
+        <item quantity="one">%1$d JAAR GELEDEN</item>
+        <item quantity="other">%1$d JAAR GELEDEN</item>
+    </plurals>
+    <plurals name="years_ago_lower">
+        <item quantity="one">%1$d jaar geleden</item>
+        <item quantity="other">%1$d jaar geleden</item>
+    </plurals>
+    <string name="see_all">ALLES TONEN</string>
+    <string name="on_this_day_title">Op deze dag</string>
+    <string name="on_this_day_empty">Nog niets van deze datum</string>
+    <string name="on_this_day_empty_body">Foto\'s en video\'s van deze datum in vorige jaren komen hier.</string>
+    <string name="share">Delen</string>
+    <string name="favorite">Favoriet</string>
+    <string name="delete">Verwijderen</string>
+    <string name="move_to_vault">Naar de kluis</string>
+    <string name="move_to_vault_sub">Versleuteld in GalleryCtrl; uit de bibliotheek gehaald</string>
+    <plurals name="selected_count">
+        <item quantity="one">%1$d geselecteerd</item>
+        <item quantity="other">%1$d geselecteerd</item>
+    </plurals>
+
+    <!-- Albums -->
+    <string name="favorites">Favorieten</string>
+    <string name="videos">Video\'s</string>
+    <string name="vault">Kluis</string>
+    <string name="duplicates">Dubbels</string>
+    <string name="folders">MAPPEN</string>
+    <string name="empty_album">Hier staat niets</string>
+    <string name="slideshow">Diavoorstelling</string>
+
+    <!-- Duplicates -->
+    <string name="finding_duplicates">Je foto\'s worden op de telefoon vergeleken…</string>
+    <string name="no_duplicates">Geen dubbels gevonden</string>
+    <string name="keep_best">Beste houden</string>
+    <string name="best">BESTE</string>
+    <plurals name="similar_count">
+        <item quantity="one">%1$d gelijkaardige foto</item>
+        <item quantity="other">%1$d gelijkaardige foto\'s</item>
+    </plurals>
+
+    <!-- Vault -->
+    <string name="vault_empty">De kluis is leeg</string>
+    <string name="vault_body">Selecteer foto\'s of video\'s en tik op het slot om ze hierheen te verplaatsen. Ze worden versleuteld in GalleryCtrl en uit je bibliotheek gehaald, zodat andere apps ze niet zien.</string>
+    <string name="vault_hint">Versleuteld met een sleutel in de beveiligde hardware van deze telefoon. Tik op een item om het te bekijken, terug te zetten of te verwijderen.</string>
+    <string name="vault_restore">Terugzetten in de bibliotheek</string>
+    <string name="vault_delete">Verwijderen</string>
+    <string name="vault_delete_title">Uit de kluis verwijderen?</string>
+    <string name="vault_delete_body">Dit is de enige kopie. Ze kan niet teruggehaald worden.</string>
+
+    <!-- Viewer -->
+    <string name="more">Meer</string>
+    <string name="edit">Bewerken</string>
+    <string name="info">Info</string>
+    <string name="set_as">Instellen als</string>
+    <string name="slideshow_stop">TIK OM TE STOPPEN</string>
+    <string name="info_name">Naam</string>
+    <string name="info_date">Datum</string>
+    <string name="info_size">Grootte</string>
+    <string name="info_duration">Duur</string>
+    <string name="info_folder">Map</string>
+    <string name="info_camera">Camera</string>
+    <string name="info_lens">Lens</string>
+    <string name="info_exposure">Belichting</string>
+    <string name="info_location">Locatie</string>
+
+    <!-- Settings -->
+    <string name="group_library">Bibliotheek</string>
+    <string name="on_this_day_setting">Op deze dag</string>
+    <string name="on_this_day_sub">Foto\'s en video\'s van deze datum in vorige jaren, bovenaan Foto\'s</string>
+    <string name="slideshow_interval">Snelheid diavoorstelling</string>
+    <string name="slide_2">2 seconden</string>
+    <string name="slide_4">4 seconden</string>
+    <string name="slide_8">8 seconden</string>
+    <string name="lock_vault">Pincode vragen voor de kluis</string>
+    <string name="lock_vault_sub">Gebruikt de pincode of vingerafdruk van de app-vergrendeling</string>
+    <string name="vault_footer">De kluis is versleuteld met AES-256 en een sleutel in de beveiligde hardware van deze telefoon. Ze zit niet in back-ups.</string>
+
+    <!-- Pinned and hidden folders -->
+    <string name="album_options">Mapopties</string>
+    <string name="album_pinned">Vastgezet</string>
+    <string name="album_pin">Bovenaan vastzetten</string>
+    <string name="album_pin_sub">Toon deze map eerst in Albums</string>
+    <string name="album_unpin">Losmaken</string>
+    <string name="album_unpin_sub">Zet deze map terug in de gewone volgorde</string>
+    <string name="album_hide">Map verbergen</string>
+    <string name="album_hide_sub">Laat ze weg uit Foto\'s, Albums, zoeken, Op deze dag en dubbels. Toon ze opnieuw via Instellingen.</string>
+    <string name="hidden_folders">Verborgen mappen</string>
+    <string name="hidden_folders_sub">Mappen die niet in de rasters staan; tik om er een opnieuw te tonen</string>
+    <string name="hidden_folders_empty">Er zijn geen mappen verborgen. Houd een map in Albums ingedrukt om ze te verbergen.</string>
+    <string name="hidden_folder_show">Tik om ze opnieuw te tonen</string>
+    <string name="hidden_folder_gone">Map staat niet meer op de telefoon</string>
+    <string name="hidden_folder_forget">Tik om ze te vergeten</string>
+    <string name="hidden_folders_footer">Verbergen ruimt alleen GalleryCtrl op: de bestanden blijven waar ze zijn, andere apps zien ze nog en verborgen mappen zijn niet vergrendeld. Gebruik de kluis voor privéfoto\'s.</string>
+
+    <!-- Storage -->
+    <string name="storage_title">Opslag</string>
+    <string name="storage_counting">Je bibliotheek wordt opgeteld…</string>
+    <string name="storage_library">BIBLIOTHEEK</string>
+    <string name="storage_phone_free">VRIJ OP TELEFOON</string>
+    <string name="storage_of_total">van %1$s</string>
+    <string name="storage_photos">FOTO\'S</string>
+    <string name="storage_videos">VIDEO\'S</string>
+    <string name="storage_share">VAN GEBRUIKTE RUIMTE</string>
+    <string name="storage_share_sub">ingenomen door de bibliotheek</string>
+    <string name="storage_by_folder">PER MAP</string>
+    <string name="storage_by_type">PER BESTANDSTYPE</string>
+    <string name="storage_largest">GROOTSTE BESTANDEN</string>
+    <string name="storage_note">De groottes komen uit de mediabibliotheek van Android. Verborgen mappen tellen ook mee. De kluis staat in GalleryCtrl zelf.</string>
+    <plurals name="storage_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+
+    <!-- Move, copy, rename -->
+    <string name="move_to">Verplaatsen naar…</string>
+    <string name="copy_to">Kopiëren naar…</string>
+    <string name="move_to_title">Verplaatsen naar map</string>
+    <string name="copy_to_title">Kopiëren naar map</string>
+    <string name="move">Verplaatsen</string>
+    <string name="copy">Kopiëren</string>
+    <string name="rename">Naam wijzigen</string>
+    <string name="new_folder">Nieuwe map</string>
+    <string name="new_folder_sub">Gemaakt in %1$s</string>
+    <string name="folder_name">Mapnaam</string>
+    <string name="file_name">Bestandsnaam</string>
+    <string name="rename_hint">Naam (de extensie .%1$s blijft)</string>
+    <string name="renamed">Naam gewijzigd</string>
+    <string name="rename_failed">De naam kon niet gewijzigd worden. Staat er al een bestand met die naam?</string>
+    <string name="organize_failed">Android kon niet om toestemming vragen om deze bestanden te wijzigen</string>
+    <string name="organize_partly">%1$d van %2$d gedaan; de andere konden daar niet gewijzigd worden</string>
+    <plurals name="moved_count">
+        <item quantity="one">%1$d item verplaatst</item>
+        <item quantity="other">%1$d items verplaatst</item>
+    </plurals>
+    <plurals name="copied_count">
+        <item quantity="one">%1$d item gekopieerd</item>
+        <item quantity="other">%1$d items gekopieerd</item>
+    </plurals>
+    <plurals name="copying_count">
+        <item quantity="one">%1$d item kopiëren…</item>
+        <item quantity="other">%1$d items kopiëren…</item>
+    </plurals>
+
+    <!-- Video player -->
+    <string name="video_frame_back">Eén beeld terug</string>
+    <string name="video_frame_forward">Eén beeld vooruit</string>
+    <string name="video_speed">Afspeelsnelheid</string>
+
+    <!-- Opened from other apps, and the picker -->
+    <string name="close">Sluiten</string>
+    <string name="external_unreadable">Dit bestand kan niet geopend worden</string>
+    <string name="external_unreadable_body">De app die het stuurde, gaf GalleryCtrl geen toegang, of het bestand is weg.</string>
+    <string name="pick_photo">Kies een foto</string>
+    <string name="pick_photos">Kies foto\'s</string>
+    <string name="pick_video">Kies een video</string>
+    <string name="pick_videos">Kies video\'s</string>
+    <string name="pick_item">Kies een foto of video</string>
+    <string name="pick_items">Kies foto\'s en video\'s</string>
+    <string name="pick_folder">Map</string>
+    <string name="pick_all_folders">Alle mappen</string>
+    <string name="pick_nothing">Hier staat niets wat deze app kan gebruiken</string>
+    <string name="pick_done">Klaar</string>
+
+    <!-- Back up and restore settings -->
+    <string name="backup_title">Back-up en herstellen</string>
+    <string name="backup_footer">Alleen de instellingen van GalleryCtrl gaan in het bestand: geen pincode, geen sleutels, geen kluis en geen foto\'s.</string>
+    <string name="backup_save">Instellingen in een bestand bewaren</string>
+    <string name="backup_save_sub">Raster, Op deze dag, diavoorstelling, privacyopties, verborgen en vastgezette mappen</string>
+    <string name="backup_restore">Instellingen uit een bestand herstellen</string>
+    <string name="backup_restore_sub">Toont eerst wat vervangen wordt</string>
+    <string name="backup_saved">Instellingen bewaard</string>
+    <string name="backup_save_failed">Het bestand kon niet bewaard worden</string>
+    <string name="backup_read_failed">Het bestand kon niet gelezen worden</string>
+    <string name="backup_not_valid">Dit is geen instellingenbestand van GalleryCtrl</string>
+    <string name="backup_too_new">Dit bestand komt van een nieuwere GalleryCtrl. Werk de app eerst bij.</string>
+    <string name="backup_restore_title">Deze instellingen herstellen?</string>
+    <string name="backup_restore_body">Bewaard op %1$s.\n\nDit vervangt je rastergrootte, Op deze dag en de snelheid van de diavoorstelling, je verborgen mappen (%2$s) en vastgezette mappen (%3$s).\n\nPrivacy-instellingen kunnen alleen strenger worden: het bestand kan Verbergen in schermafbeeldingen, Verbergen in recente apps en de pincode voor de kluis aanzetten, of Opnieuw vergrendelen sneller maken, maar nooit omgekeerd. De app-vergrendeling en je pincode veranderen niet.</string>
+    <string name="backup_none">geen</string>
+    <string name="backup_restore_confirm">Herstellen</string>
+    <string name="backup_restored">Instellingen hersteld</string>
+</resources>

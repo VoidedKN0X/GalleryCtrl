@@ -34,6 +34,10 @@ Changes on `main` that aren't in a release yet. They ship with the next version.
   - A restore never makes GalleryCtrl less private: it can turn on *Hide in screenshots*, *Hide in recent apps* and *Ask for the PIN for the vault*, or make *Lock again* sooner, but never turn them off or make the lock wait longer. The app lock itself and its PIN are never in the file.
   - Files that aren't GalleryCtrl settings, or come from a newer version, are refused with a message.
 
+### Changed
+
+- **GalleryCtrl speaks Dutch.** With your phone set to Dutch (Nederlands), every screen, button, message and setting is now in Dutch (Belgian Dutch, informal "je"); with any other language it stays English. Android picks the language from the phone, so there is no setting for it in the app (Android's own per-app language setting works too). Names such as GalleryCtrl, Ultra HDR, JPEG and units stay as they are. Dates, months and the search by date follow the phone's language, as before.
+
 ## v0.4.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there.

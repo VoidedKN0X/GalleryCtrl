@@ -75,6 +75,7 @@ fun SettingsScreen() {
                 GroupSwitch(stringResource(R.string.lock_vault), stringResource(R.string.lock_vault_sub), settings.lockVault, Icons.Outlined.Lock) { on -> set { it.copy(lockVault = on) } }
             }
             PrivacyAndSecurityGroup(settings)
+            BackupGroup()
         }
     }
 }

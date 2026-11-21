@@ -29,6 +29,11 @@ Changes on `main` that aren't in a release yet. They ship with the next version.
 - **GalleryCtrl as a photo picker.** When an app asks you to choose a photo or video ("Choose from gallery", attach a picture, a new profile photo), GalleryCtrl is offered. It shows your library, only the kind of file the app asked for (photos, videos or both, or one exact type), newest first with the fast-scroll handle; the folder button switches to one folder. Tap a photo to hand it over, or, when the app allows several, tap to select them and then **Done**. The app gets read access to exactly the files you chose and nothing else. Hidden folders and the vault are never offered.
 - Both open behind the app lock when it is on, and follow *Hide in screenshots* and *Hide in recent apps*, like the rest of GalleryCtrl.
 
+- **Back up and restore settings.** **Settings > Back up and restore** saves GalleryCtrl's settings to a JSON file in a place you pick (Downloads, a USB stick, a cloud folder), and restores them from one, for example on a new phone. The file holds the grid size, On this day, the slideshow speed, the privacy options and your hidden and pinned folders (by folder, with their names), and nothing else: no PIN, no keys, nothing from the vault and no photos.
+  - Restoring first shows the file's date and which hidden and pinned folders it has, and asks before replacing anything.
+  - A restore never makes GalleryCtrl less private: it can turn on *Hide in screenshots*, *Hide in recent apps* and *Ask for the PIN for the vault*, or make *Lock again* sooner, but never turn them off or make the lock wait longer. The app lock itself and its PIN are never in the file.
+  - Files that aren't GalleryCtrl settings, or come from a newer version, are refused with a message.
+
 ## v0.4.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there.

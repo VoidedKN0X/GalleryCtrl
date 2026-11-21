@@ -34,6 +34,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Encrypted vault:** move photos and videos into GalleryCtrl's own storage, encrypted with AES-256-GCM and a key held in the phone's secure hardware; the originals are removed from your library. View, restore or delete them; the vault can ask for your app PIN
 - **Delete means deleted:** there's no trash bin, so deleted photos don't linger in a hidden folder. Android asks you to confirm each delete
 - **Limited access:** allow only the photos you pick, and add more any time
+- **Back up and restore settings** to a file you pick (no PIN, keys, vault or photos in it; a restore never weakens privacy settings)
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, following your phone's dark theme setting, high contrast, one violet accent, Space Grotesk and JetBrains Mono; landscape, tablet and foldable layouts
 
@@ -58,7 +59,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Select:** long-press a photo, tap more, then use the bar at the bottom.
 - **Vault:** select photos and tap the lock. Open it from **Albums > Vault**. Android asks you to confirm removing the originals from your library.
 - **Duplicates:** **Albums > Duplicates** compares your photos on the phone; **Keep best** deletes the others in that group.
-- **Settings** (profile picture): grid size, On this day, slideshow speed, the vault PIN and privacy.
+- **Settings** (profile picture): grid size, On this day, slideshow speed, hidden folders, the vault PIN, privacy, and back up and restore.
 
 ## Is it safe to install?
 

@@ -4,9 +4,9 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## v0.7.0 (2026-11-22)
 
-Built and checked by CI only: nothing here has been run on a phone yet. **Before updating, make a copy of anything precious in the vault** (restore it to your library, or back it up some other way): this version converts the vault's files to a new format the first time it starts.
+Built and checked by CI only: nothing in this release had been run on a phone when it was published.
 
 ### Security
 

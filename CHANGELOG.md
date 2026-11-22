@@ -8,6 +8,8 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.
 
+**Before updating, make a copy of anything precious in the vault** (restore it to your library, or back it up some other way): this version converts the vault's files to a new format the first time it starts. The conversion never deletes an old file before its new copy has been read back and checked, but it has not been run on a phone yet.
+
 ### Security
 
 - **The vault asks for its PIN again.** With the app lock on and *Settings > Vault > Ask for the PIN for the vault* on (the default), opening **Albums > Vault** now shows the PIN pad (and offers your fingerprint) every time, even though the app is already unlocked. Before, the vault opened straight away, so anyone you handed the open gallery to could look inside. It uses the same PIN, fingerprint and wrong-PIN lockout as the app lock (wrong guesses here count towards the same waiting time). Back or *Cancel* leaves without opening it. Leaving the vault, or the app locking, closes it again. The PIN screen is kept out of screenshots, like the app's own lock screen.

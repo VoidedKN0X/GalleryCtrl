@@ -17,10 +17,13 @@ class GalleryCtrlApp : Application() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 AppLock.onForeground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
+                container.media.onForeground()
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 AppLock.onBackground(container.vault.enabled, container.settings.settings.value.lockTimeout.millis)
+                // The library isn't read again for every change while GalleryCtrl is in the background.
+                container.media.onBackground()
             }
         })
     }

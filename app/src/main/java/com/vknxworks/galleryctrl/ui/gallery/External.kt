@@ -150,7 +150,7 @@ fun PickerScreen(filter: MimeFilter, multiple: Boolean, onCancel: () -> Unit, on
         c.media.reload()
     }
     LaunchedEffect(full, partial) {
-        if (full || partial) c.media.start() else if (!asked) launcher.launch(PICK_PERMISSIONS)
+        if (full || partial) c.media.start(access = full) else if (!asked) launcher.launch(PICK_PERMISSIONS)
     }
     val title = stringResource(
         when {

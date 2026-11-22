@@ -56,7 +56,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +70,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.galleryctrl.R
 import com.vknxworks.galleryctrl.container
@@ -87,7 +88,7 @@ import com.vknxworks.galleryctrl.ui.theme.CtrlColors
 import com.vknxworks.galleryctrl.ui.theme.CtrlType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.DateFormat
@@ -114,15 +115,18 @@ fun ViewerScreen() {
     var slideshow by remember { mutableStateOf(c.viewerSlideshow.value) }
     var info by remember { mutableStateOf<MediaItem?>(null) }
     var more by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     val request = rememberMediaRequest()
     val organize = rememberOrganize()
 
     LaunchedEffect(items.isEmpty()) { if (items.isEmpty() && source.isNotEmpty()) nav.back() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(slideshow) {
         if (slideshow) chrome = false
         while (slideshow && items.isNotEmpty()) {
             delay(settings.slideInterval.seconds * 1000L)
+            // Paused while GalleryCtrl is in the background: no paging through photos nobody sees.
+            lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.STARTED) }
+            if (items.isEmpty()) break
             pager.animateScrollToPage((pager.currentPage + 1) % items.size)
         }
     }
@@ -200,10 +204,8 @@ fun ViewerScreen() {
             GroupRow(stringResource(R.string.rename), icon = Icons.Outlined.DriveFileRenameOutline, onClick = { more = false; organize.rename(item) })
             GroupRow(stringResource(R.string.move_to_vault), stringResource(R.string.move_to_vault_sub), icon = Icons.Outlined.Lock, onClick = {
                 more = false
-                scope.launch {
-                    val stored = c.photoVault.add(listOf(item))
-                    if (stored.isNotEmpty()) request(MediaRequests.delete(context, stored))
-                }
+                // Runs on even if you leave the viewer; the delete request for the original follows (VaultDeletePrompt).
+                c.moveToVault(listOf(item))
             })
             Spacer(Modifier.navigationBarsPadding().height(12.dp))
         }
@@ -361,9 +363,15 @@ fun VaultViewer(entry: VaultEntry, onClose: () -> Unit, onRestore: () -> Unit, o
     BackHandler(onBack = onClose)
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (video) {
-            // The player needs a file: a decrypted copy in the private cache, wiped when you leave the vault.
-            val file by produceState<File?>(null, entry.id) { value = c.photoVault.open(entry) }
-            file?.let { f -> VideoBox(Uri.fromFile(f), active = true, padding = viewerBarsPadding()) }
+            // Streamed from the encrypted file, decrypted piece by piece as it plays (seeking works, nothing is written).
+            val stream = remember(entry.id) { c.photoVault.streamUri(entry) }
+            if (stream != null) {
+                VideoBox(stream, active = true, padding = viewerBarsPadding())
+            } else {
+                // Not converted to the new format yet: a decrypted copy in the private cache, wiped when you leave the vault.
+                val file by produceState<File?>(null, entry.id) { value = c.photoVault.open(entry) }
+                file?.let { f -> VideoBox(Uri.fromFile(f), active = true, padding = viewerBarsPadding()) }
+            }
         } else {
             // Photos are decrypted in memory only.
             val bmp by produceState<Bitmap?>(null, entry.id) { value = c.photoVault.image(entry, 4096) }

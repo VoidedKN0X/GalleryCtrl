@@ -5,7 +5,7 @@
     <string name="app_lock_subtitle">Vraag een app-pincode (en eventueel je vingerafdruk) wanneer je GalleryCtrl opent. De kluis kan er ook zelf om vragen.</string>
     <string name="app_lock_footer">GalleryCtrl werkt volledig offline: geen internettoestemming, geen analytics, geen cloud en geen AI-dienst. Je foto\'s blijven waar ze staan op deze telefoon.</string>
     <string name="lock_prompt_subtitle">Je foto\'s</string>
-    <string name="lock_forgot_body">De pincode kan niet hersteld worden. GalleryCtrl wist alles in de kluis (dat is wat de vergrendeling beschermt), zet de instellingen terug en zet de app-vergrendeling uit. Je fotobibliotheek zelf blijft onaangeroerd.</string>
+    <string name="lock_forgot_body">De pincode kan niet hersteld worden. GalleryCtrl wist alles in de kluis (dat is wat de vergrendeling beschermt), zet de instellingen terug en zet de app-vergrendeling uit. Je fotobibliotheek zelf blijft onaangeroerd. Als je telefoon een schermvergrendeling heeft, bevestig je eerst daarmee.</string>
 
     <!-- Tabs -->
     <string name="tab_photos">Foto\'s</string>
@@ -106,7 +106,7 @@
     <string name="slide_4">4 seconden</string>
     <string name="slide_8">8 seconden</string>
     <string name="lock_vault">Pincode vragen voor de kluis</string>
-    <string name="lock_vault_sub">Gebruikt de pincode of vingerafdruk van de app-vergrendeling</string>
+    <string name="lock_vault_sub">Elke keer gevraagd als je de kluis opent, met de pincode of vingerafdruk van de app-vergrendeling</string>
     <string name="vault_footer">De kluis is versleuteld met AES-256 en een sleutel in de beveiligde hardware van deze telefoon. Ze zit niet in back-ups.</string>
 
     <!-- Pinned and hidden folders -->
@@ -212,4 +212,16 @@
     <string name="backup_none">geen</string>
     <string name="backup_restore_confirm">Herstellen</string>
     <string name="backup_restored">Instellingen hersteld</string>
+    <string name="lock_reset_prompt_title">App-vergrendeling van GalleryCtrl resetten</string>
+    <string name="lock_reset_prompt_subtitle">Bevestig met de schermvergrendeling van je telefoon dat jij het bent. Dit wist de kluis.</string>
+    <string name="lock_reset_prompt_failed">De schermvergrendeling kon niet getoond worden</string>
+    <string name="vault_enter_pin">Geef je pincode in om de kluis te openen</string>
+    <string name="vault_prompt_subtitle">De kluis openen</string>
+    <string name="vault_restore_failed">Dit item kon niet teruggezet worden. Het zit nog in de kluis.</string>
+    <string name="vault_converting">De versleuteling van de kluis wordt bijgewerkt: nog %1$d. Alles blijft ondertussen te bekijken.</string>
+    <string name="vault_unconverted">%1$d nog in het oude formaat (te groot of nu niet leesbaar). Ze blijven zoals ze zijn in de kluis; GalleryCtrl probeert het opnieuw bij de volgende start.</string>
+    <plurals name="vault_add_failed">
+        <item quantity="one">%1$d item kon niet naar de kluis. Het staat nog in je bibliotheek.</item>
+        <item quantity="other">%1$d items konden niet naar de kluis. Ze staan nog in je bibliotheek.</item>
+    </plurals>
 </resources>

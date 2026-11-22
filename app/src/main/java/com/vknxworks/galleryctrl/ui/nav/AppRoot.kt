@@ -75,6 +75,7 @@ fun AppRoot() {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         MainScaffold()
     }
+    VaultDeletePrompt()
 }
 
 private data class TopDest(val route: Any, @StringRes val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)

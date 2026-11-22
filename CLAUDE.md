@@ -5,11 +5,16 @@ Gallery app in the VKNXWorks Ctrl series. Kotlin, Jetpack Compose, Material 3, m
 ## Layout
 
 - `media/Media.kt`: `MediaRepository` over MediaStore Files (images + videos, trashed items excluded), a ContentObserver, Android's thumbnail store with an LRU cache.
-- `media/Actions.kt`: `MediaRequests` (favourite and permanent delete through MediaStore requests; no trash), `Sharing` (hands the original MediaStore URIs to the chooser; no copies, no FileProvider), `Vault` (AES-256-GCM files and an encrypted `index.bin` in `filesDir/vault`, key in AndroidKeyStore; photos and thumbnails decrypted in memory only, videos into `cacheDir/vault`, wiped with `File.wipe()`).
+  The library is read once; `start(access)` reads it again only when the access changed, the observer follows changes, and in the background (`onBackground`/`onForeground` from `GalleryCtrlApp`) changes only mark it dirty for one re-read on return. Grid grouping and albums go through `rememberComputed` (ui/gallery/Computed.kt): memoised by list identity, recomputed off the main thread.
+- `media/Actions.kt`: `MediaRequests` (favourite and permanent delete through MediaStore requests; no trash), `Sharing` (hands the original MediaStore URIs to the chooser; no copies, no FileProvider) and `File.wipe()`.
+- `media/VaultFormat.kt`: the vault file format v2 (`<id>.gcv`, per-file AES-256 key wrapped by the AndroidKeyStore key, 64 KB AES-GCM chunks with Tink-style nonces and the header as AAD; `ChunkedOutputStream`, `ChunkedReader` with random access) and `VaultConversion` (one-time crash-safe conversion of old `<id>.bin` files: write tmp, read back and compare SHA-256, rename, only then delete the old file). Pure JVM code, unit-tested in `VaultFormatTest`; any format change needs a new version byte and tests.
+- `media/Vault.kt`: the vault (entries in an encrypted `index.bin`, still the old single-stream Keystore GCM since it's small; per-entry encrypted `<id>.thumb`; old `.bin` files read the old way until converted). Videos stream to the player through `media/VaultStreamProvider.kt` (not exported, same-UID only, only while `Vault.viewing`), backed by `StorageManager.openProxyFileDescriptor`; large photos decode through the same proxy fd. Only unconverted old videos still go through `cacheDir/vault`. `android:largeHeap` is on so bigger old files can still be converted.
 - `media/Duplicates.kt`: dHash + 3×3 colour grid, hashes kept in memory only (cleared on lock). `media/DuplicateGroups.kt`: the grouping on plain arrays (unit-tested against comparing every pair; the groups must stay identical to that).
 - `media/OnThisDay.kt` (date matching: EXIF camera date, then EXIF offset, then phone zone; 29 Feb on 28 Feb), `media/PhotoInfo.kt` (EXIF dates for On this day, memory only, cleared on lock; no GPS).
 - `ui/gallery`: `Grids.kt` (access, grids, tabs, album, search, duplicates, vault), `Viewer.kt` (pager, zoom, video, Ultra HDR, info, vault viewer). Info is the only place a photo's location is read (EXIF via `setRequireOriginal`, needs `ACCESS_MEDIA_LOCATION`).
 - `data/settings/AppSettings.kt`: `removeMapLeftovers()` is the one-time clean-up for the removed photo map (releases the old map file's persisted read grant, deletes the `map_file` key). Nothing else persists URI grants; if a feature ever does, change that clean-up first.
+- `SettingsRepository.loaded` turns true once the saved settings are read. `CtrlWindow` keeps FLAG_SECURE on until then, and every activity calls `startHidden()` (FirstFrameGate, MainActivity.kt) so no frame is drawn with default settings. Background/cold-start code that reads `settings.value` before `loaded` gets the defaults, so defaults must stay the strictest choice (lock timeout IMMEDIATELY, vault PIN on).
+- The app runs `:app:testDebugUnitTest` in the `build` job; keep tests pure JVM (no Robolectric).
 
 ## Hard rules
 
@@ -18,7 +23,8 @@ Gallery app in the VKNXWorks Ctrl series. Kotlin, Jetpack Compose, Material 3, m
 - **Telemetry-free:** no analytics or crash reporting. No cloud or AI services.
 - **No trash bin.** Delete is permanent (MediaStore delete request). Never add a hidden or recoverable copy.
 - Never request MANAGE_EXTERNAL_STORAGE; library changes go through MediaStore requests.
-- Vault plaintext only in memory, or (videos and photos over 64 MB) in `cacheDir/vault`, wiped on leaving the vault, on lock and at start. Never write vault names or thumbnails anywhere unencrypted.
+- Vault plaintext only in memory (or streamed through the proxy fd); only old-format files not converted yet may go through `cacheDir/vault`, wiped on leaving the vault, on lock and at start. Never write vault names or thumbnails anywhere unencrypted. Never delete an old vault file before its converted copy has been read back and compared.
+- The vault's own PIN (`VaultLock.open`) is separate from `AppLock.unlocked`: cleared on leaving the vault and in `AppContainer.onLocked()`. "Forgot PIN?" must stay behind the phone's screen lock (`AppLock.screenLockAuthenticate`) when one is set.
 - **No photo map** (removed at the owner's request; don't add it or Mapsforge back). Photo locations are read only for the Info of the photo being viewed; never scan the library for locations and never cache them on disk.
 - arm64-v8a only. Every user-facing string goes in `strings.xml`. Settings open only from the profile picture.
 

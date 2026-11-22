@@ -1,6 +1,7 @@
 package com.vknxworks.galleryctrl.ui.lock
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.hardware.biometrics.BiometricManager
@@ -43,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -244,6 +246,67 @@ object AppLock {
             if (finish()) onError(activity.getString(R.string.lock_fingerprint_failed))
         }
     }
+
+    /** The phone has a screen lock (PIN, pattern or password) that can confirm it's the owner. */
+    fun screenLockSet(context: Context): Boolean = runCatching {
+        context.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
+    }.getOrDefault(true)
+
+    /**
+     * The phone's own screen lock (or a strong fingerprint). Only used for "Forgot PIN?", so that resetting the
+     * app lock (and deleting the vault) isn't open to anyone who picks up the unlocked phone. [onResult] gets null
+     * when confirmed, or an error message; cancelling calls [onCancel] instead.
+     */
+    fun screenLockAuthenticate(activity: Activity, onCancel: () -> Unit, onResult: (String?) -> Unit) {
+        // Replaces a prompt that is still marked as open; its late answer (if any) is ignored below.
+        promptSignal?.let { runCatching { it.cancel() } }
+        val generation = ++promptGeneration
+        val signal = CancellationSignal()
+        promptSignal = signal
+        promptStartedAt = SystemClock.elapsedRealtime()
+        fun finish(): Boolean {
+            if (generation != promptGeneration || promptSignal !== signal) return false
+            promptSignal = null
+            return true
+        }
+        try {
+            val prompt = BiometricPrompt.Builder(activity)
+                .setTitle(activity.getString(R.string.lock_reset_prompt_title))
+                .setSubtitle(activity.getString(R.string.lock_reset_prompt_subtitle))
+                .setAllowedAuthenticators(
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+                )
+                .build()
+            prompt.authenticate(signal, activity.mainExecutor, object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    if (finish()) onResult(null)
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    if (!finish()) return
+                    val cancelled = errorCode == BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.BIOMETRIC_ERROR_CANCELED
+                    if (cancelled) onCancel() else onResult(errString.toString())
+                }
+            })
+        } catch (e: Exception) {
+            if (finish()) onResult(activity.getString(R.string.lock_reset_prompt_failed))
+        }
+    }
+}
+
+/**
+ * The vault's own lock ("Ask for the PIN for the vault"): separate from the app being unlocked, so the vault asks
+ * for the PIN or fingerprint every time it's opened. Uses the same PIN, fingerprint and wrong-PIN lockout as the
+ * app lock ([LockVault]). Closed again when you leave the vault and whenever the app locks.
+ */
+object VaultLock {
+    /** The vault has been unlocked and is open right now. */
+    var open by mutableStateOf(false)
+
+    /** The vault's PIN screen is showing (the window is then kept out of screenshots, like the app's lock screen). */
+    var asking by mutableStateOf(false)
+        internal set
 }
 
 /**
@@ -266,7 +329,7 @@ tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 /** Whether a lock or PIN screen is showing right now (the window is then always kept out of screenshots). */
-fun lockCovering(vault: LockVault): Boolean = (vault.enabled && !AppLock.unlocked) || AppLock.request != null
+fun lockCovering(vault: LockVault): Boolean = (vault.enabled && !AppLock.unlocked) || AppLock.request != null || VaultLock.asking
 
 /**
  * Shows [content] only while the app is unlocked (or the lock is off), with the PIN screens for
@@ -333,9 +396,22 @@ private fun LockBadge() {
     ) { Icon(Icons.Outlined.Lock, null, Modifier.size(30.dp), tint = CtrlColors.OnAccent) }
 }
 
-/** The lock screen: PIN pad, fingerprint, and "Forgot PIN?". */
+/**
+ * The vault's PIN screen, shown each time the vault is opened while "Ask for the PIN for the vault" and the app
+ * lock are on. The same PIN pad, fingerprint and lockout as the app's lock screen; Back or Cancel leaves the vault.
+ */
 @Composable
-private fun PinLockScreen() {
+fun VaultPinScreen(onCancel: () -> Unit) {
+    DisposableEffect(Unit) {
+        VaultLock.asking = true
+        onDispose { VaultLock.asking = false }
+    }
+    PinLockScreen(forVault = true, onCancel = onCancel)
+}
+
+/** The lock screen: PIN pad, fingerprint, and "Forgot PIN?" (or, for the vault, Cancel). */
+@Composable
+private fun PinLockScreen(forVault: Boolean = false, onCancel: () -> Unit = {}) {
     val context = LocalContext.current
     val c = context.container
     val vault = c.vault
@@ -348,6 +424,10 @@ private fun PinLockScreen() {
     var checking by remember { mutableStateOf(false) }
     var lockout by remember { mutableLongStateOf(vault.lockoutRemaining()) }
     var forgetting by remember { mutableStateOf(false) }
+    // The app lock unlocks the app; the vault's own PIN screen only opens the vault.
+    fun unlocked() {
+        if (forVault) VaultLock.open = true else c.onUnlocked()
+    }
     val bioAvailable = remember(AppLock.lockCount, AppLock.returns) {
         vault.biometricEnabled && AppLock.biometricAvailable(context) && !vault.pinRequired()
     }
@@ -369,11 +449,11 @@ private fun PinLockScreen() {
         AppLock.biometricPrompt(
             a,
             context.getString(R.string.lock_prompt_title),
-            context.getString(R.string.lock_prompt_subtitle),
+            context.getString(if (forVault) R.string.vault_prompt_subtitle else R.string.lock_prompt_subtitle),
             cipher,
             onError = { message = it },
-        ) { unlocked ->
-            if (vault.unlockWithBiometric(unlocked)) c.onUnlocked() else message = context.getString(R.string.lock_fingerprint_failed)
+        ) { cipherOk ->
+            if (vault.unlockWithBiometric(cipherOk)) unlocked() else message = context.getString(R.string.lock_fingerprint_failed)
         }
     }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -395,7 +475,7 @@ private fun PinLockScreen() {
             checking = false
             pin = ""
             when (result) {
-                LockVault.PinResult.Ok -> c.onUnlocked()
+                LockVault.PinResult.Ok -> unlocked()
                 LockVault.PinResult.Wrong, LockVault.PinResult.LockedOut -> {
                     lockout = vault.lockoutRemaining()
                     message = context.getString(R.string.lock_wrong_pin)
@@ -406,13 +486,14 @@ private fun PinLockScreen() {
         }
     }
 
-    BackHandler { activity?.moveTaskToBack(true) }
+    BackHandler { if (forVault) onCancel() else activity?.moveTaskToBack(true) }
     PinPadScreen(
-        title = stringResource(R.string.lock_title),
+        title = stringResource(if (forVault) R.string.vault else R.string.lock_title),
         message = when {
             lockout > 0 -> stringResource(R.string.lock_too_many, ((lockout + 999) / 1000).toInt())
             message != null -> message!!
             vault.biometricEnabled && vault.pinRequired() -> stringResource(R.string.lock_pin_required)
+            forVault -> stringResource(R.string.vault_enter_pin)
             else -> stringResource(R.string.lock_enter_pin)
         },
         isError = lockout > 0 || message != null,
@@ -433,7 +514,11 @@ private fun PinLockScreen() {
         confirmLabel = stringResource(R.string.lock_ok),
         onBiometric = if (bioAvailable) ::askFingerprint else null,
         bottom = {
-            TextButton(onClick = { forgetting = true }) { Text(stringResource(R.string.lock_forgot), color = CtrlColors.Muted) }
+            if (forVault) {
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel), color = CtrlColors.Muted) }
+            } else {
+                TextButton(onClick = { forgetting = true }) { Text(stringResource(R.string.lock_forgot), color = CtrlColors.Muted) }
+            }
         },
     )
     if (forgetting) {
@@ -444,7 +529,16 @@ private fun PinLockScreen() {
             confirmButton = {
                 TextButton(onClick = {
                     forgetting = false
-                    scope.launch { c.forgetEverything() }
+                    val a = activity
+                    if (!AppLock.screenLockSet(context)) {
+                        // No screen lock on the phone to confirm with: reset after this confirmation, as before.
+                        scope.launch { c.forgetEverything() }
+                    } else if (a != null && !a.isFinishing && !a.isDestroyed) {
+                        // Only the phone's owner may reset it (and delete the vault): confirm with the phone's own screen lock first.
+                        AppLock.screenLockAuthenticate(a, onCancel = {}) { error ->
+                            if (error == null) scope.launch { c.forgetEverything() } else message = error
+                        }
+                    }
                 }) { Text(stringResource(R.string.lock_forgot_confirm), color = CtrlColors.Error) }
             },
             dismissButton = { TextButton(onClick = { forgetting = false }) { Text(stringResource(R.string.cancel), color = CtrlColors.Text) } },

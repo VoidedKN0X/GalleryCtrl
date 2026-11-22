@@ -92,11 +92,11 @@ jobs:
           # were deleted by hand; and a release must not be built from files an earlier run left behind.
           cache-disabled: true
 
-      - name: Build release APK (unsigned)
+      - name: Build release APK (unsigned) and run the unit tests
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew --no-daemon assembleRelease 2>&1 | tee build.log
+          ./gradlew --no-daemon assembleRelease :app:testDebugUnitTest 2>&1 | tee build.log
 
       - name: Check the app is Google-free
         run: |

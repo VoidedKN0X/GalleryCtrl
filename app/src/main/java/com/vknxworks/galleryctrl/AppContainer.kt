@@ -1,6 +1,7 @@
 package com.vknxworks.galleryctrl
 
 import android.content.Context
+import android.widget.Toast
 import com.vknxworks.galleryctrl.data.lock.LockVault
 import com.vknxworks.galleryctrl.data.settings.SettingsRepository
 import com.vknxworks.galleryctrl.media.MediaItem
@@ -8,6 +9,7 @@ import com.vknxworks.galleryctrl.media.MediaRepository
 import com.vknxworks.galleryctrl.media.Sharing
 import com.vknxworks.galleryctrl.media.Vault
 import com.vknxworks.galleryctrl.ui.lock.AppLock
+import com.vknxworks.galleryctrl.ui.lock.VaultLock
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +58,30 @@ class AppContainer(val context: Context) {
     val viewerStart = MutableStateFlow(0)
     val viewerSlideshow = MutableStateFlow(false)
 
+    /**
+     * Originals that were moved into the vault and still have to be deleted from the library. Android's delete
+     * confirmation for them is shown by the main screen as soon as it is on screen (VaultDeletePrompt), also when the
+     * screen that started the move was left while it was encrypting.
+     */
+    val vaultPendingDelete = MutableStateFlow<List<MediaItem>>(emptyList())
+
+    /**
+     * Encrypts [items] into the vault in the app's own scope, so it always finishes (leaving the screen used to cut it
+     * off before the delete request, leaving the photo both in the vault and in the library). Says so if some couldn't
+     * be stored; those stay in the library.
+     */
+    fun moveToVault(items: List<MediaItem>) {
+        if (items.isEmpty()) return
+        appScope.launch {
+            val stored = runCatching { photoVault.add(items) }.getOrDefault(emptyList())
+            if (stored.isNotEmpty()) vaultPendingDelete.value = vaultPendingDelete.value + stored
+            val failed = items.size - stored.size
+            if (failed > 0) {
+                Toast.makeText(context, context.resources.getQuantityString(R.plurals.vault_add_failed, failed, failed), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     /** The app lock's PIN and fingerprint key (the shared Ctrl series lock). */
     val vault = LockVault(context, "galleryctrl")
 
@@ -81,6 +107,8 @@ class AppContainer(val context: Context) {
      * (the photos it protects) and the settings are deleted and the lock turned off. Your library isn't touched.
      */
     suspend fun forgetEverything() {
+        VaultLock.open = false
+        vaultPendingDelete.value = emptyList()
         photoVault.deleteAll()
         settings.clear()
         vault.disable()
@@ -88,6 +116,8 @@ class AppContainer(val context: Context) {
     }
 
     fun onLocked() {
+        // The vault asks for its PIN again after the app has locked.
+        VaultLock.open = false
         photoVault.closeCache()
         photoInfo.clear()
         com.vknxworks.galleryctrl.media.Duplicates.clear()

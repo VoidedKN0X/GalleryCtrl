@@ -20,7 +20,9 @@
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
 
     <!-- intentMatchingFlags (Android 16+): other apps can only start GalleryCtrl's exported screens with an
-         intent that matches their filters (the launcher). -->
+         intent that matches their filters (the launcher).
+         largeHeap: vault files from 0.6.0 and older can only be decrypted whole in memory (see Vault.kt); a larger
+         heap lets bigger ones be converted to the streaming format (and restored) instead of staying stuck. -->
     <application
         android:name=".GalleryCtrlApp"
         android:allowBackup="false"
@@ -28,6 +30,7 @@
         android:fullBackupContent="false"
         android:enableOnBackInvokedCallback="true"
         android:intentMatchingFlags="enforceIntentFilter"
+        android:largeHeap="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
@@ -84,6 +87,14 @@
                 <data android:mimeType="vnd.android.cursor.dir/video" />
             </intent-filter>
         </activity>
+
+        <!-- Streams a vault video to GalleryCtrl's own player, decrypted piece by piece (media/VaultStreamProvider.kt).
+             Not exported, grants nothing: no other app can open it. -->
+        <provider
+            android:name=".media.VaultStreamProvider"
+            android:authorities="${applicationId}.vaultstream"
+            android:exported="false"
+            android:grantUriPermissions="false" />
 
         <!-- No downloadable emoji font: don't let androidx.emoji2 look one up from a font provider
              at start-up. Emoji are drawn with the phone's own emoji font instead. -->

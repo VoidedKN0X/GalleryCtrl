@@ -2,6 +2,7 @@ package com.vknxworks.galleryctrl.ui.gallery
 
 import android.Manifest
 import android.app.Activity
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -64,6 +65,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -98,6 +100,8 @@ import com.vknxworks.galleryctrl.media.OnThisDay
 import com.vknxworks.galleryctrl.media.Sharing
 import com.vknxworks.galleryctrl.media.VaultEntry
 import com.vknxworks.galleryctrl.ui.common.hasPermission
+import com.vknxworks.galleryctrl.ui.lock.VaultLock
+import com.vknxworks.galleryctrl.ui.lock.VaultPinScreen
 import com.vknxworks.galleryctrl.ui.common.openAppSettings
 import com.vknxworks.galleryctrl.ui.components.CtrlBottomSheet
 import com.vknxworks.galleryctrl.ui.components.CtrlButton
@@ -109,7 +113,6 @@ import com.vknxworks.galleryctrl.ui.components.ScreenTopBar
 import com.vknxworks.galleryctrl.ui.components.SectionLabel
 import com.vknxworks.galleryctrl.ui.components.TabTitle
 import com.vknxworks.galleryctrl.ui.components.bottomClearance
-import com.vknxworks.galleryctrl.ui.lock.AppLockGate
 import com.vknxworks.galleryctrl.ui.nav.AlbumRoute
 import com.vknxworks.galleryctrl.ui.nav.DuplicatesRoute
 import com.vknxworks.galleryctrl.ui.nav.LocalNavigator
@@ -153,7 +156,7 @@ fun MediaAccess(content: @Composable (limited: Boolean, pickMore: () -> Unit) ->
         c.media.reload()
     }
     LaunchedEffect(full, partial) {
-        if (full || partial) c.media.start() else if (!asked) launcher.launch(MEDIA_PERMISSIONS)
+        if (full || partial) c.media.start(access = full) else if (!asked) launcher.launch(MEDIA_PERMISSIONS)
     }
     if (full || partial) {
         content(partial) { launcher.launch(MEDIA_PERMISSIONS) }
@@ -182,6 +185,25 @@ fun rememberMediaRequest(onDone: (Boolean) -> Unit = {}): (android.app.PendingIn
         onDone(res.resultCode == Activity.RESULT_OK)
     }
     return { pi -> runCatching { launcher.launch(IntentSenderRequest.Builder(pi.intentSender).build()) } }
+}
+
+/**
+ * Android's delete confirmation for originals that were moved into the vault ([com.vknxworks.galleryctrl.AppContainer.moveToVault]).
+ * Lives on the main screen, so it still comes when the grid or viewer that started the move is gone; it waits until
+ * GalleryCtrl is on screen (and unlocked).
+ */
+@Composable
+fun VaultDeletePrompt() {
+    val context = LocalContext.current
+    val c = context.container
+    val pending by c.vaultPendingDelete.collectAsStateWithLifecycle()
+    val request = rememberMediaRequest()
+    LaunchedEffect(pending) {
+        if (pending.isEmpty()) return@LaunchedEffect
+        val items = pending
+        c.vaultPendingDelete.value = emptyList()
+        request(MediaRequests.delete(context, items))
+    }
 }
 
 @Composable
@@ -238,17 +260,20 @@ fun MediaGrid(
     var selectionMenu by remember { mutableStateOf(false) }
     val organize = rememberOrganize()
     val request = rememberMediaRequest { selected = emptySet() }
-    val scope = rememberCoroutineScope()
     val px = with(LocalDensity.current) { (360.dp / settings.columns).roundToPx() }.coerceAtLeast(96)
     BackHandler(enabled = selected.isNotEmpty()) { selected = emptySet() }
     // Grouped once per list (and per time zone), not again on every tap while selecting or change of grid size.
+    // A list seen before (coming back from the viewer) is grouped already; a new one is grouped off the main thread
+    // while the grid keeps showing the previous grouping.
     val zone = ZoneId.systemDefault()
-    val groups = remember<List<Pair<Any, List<MediaItem>>>>(items, sections, groupByDay, zone) {
-        sections ?: if (groupByDay) items.groupBy { dayOf(it.date, zone) }.toList() else listOf(LocalDate.MIN to items)
-    }
     val showHeadings = sections != null || groupByDay
-    // Where every grid position is in time, for the fast-scroll bubble.
-    val dates = remember(groups, showHeadings) { gridDates(groups.map { (_, l) -> l.map { it.date } }, showHeadings) }
+    val grouped = rememberComputed(GridGroupMemo, items, sections, groupByDay, zone) {
+        val g: List<Pair<Any, List<MediaItem>>> = sections ?: if (groupByDay) items.groupBy { dayOf(it.date, zone) }.toList() else listOf(LocalDate.MIN to items)
+        // Where every grid position is in time, for the fast-scroll bubble.
+        g to gridDates(g.map { (_, l) -> l.map { it.date } }, showHeadings)
+    }
+    val groups = grouped.first
+    val dates = grouped.second
     val gridState = rememberLazyGridState()
 
     fun open(item: MediaItem) {
@@ -298,12 +323,8 @@ fun MediaGrid(
                 onShare = { Sharing.share(context, sel) },
                 onFavorite = { request(MediaRequests.favorite(context, sel, !sel.all { it.favorite })) },
                 onDelete = { request(MediaRequests.delete(context, sel)) },
-                onVault = {
-                    scope.launch {
-                        val stored = c.photoVault.add(sel)
-                        if (stored.isNotEmpty()) request(MediaRequests.delete(context, stored))
-                    }
-                },
+                // Runs on even if you leave this screen; the delete request for the originals follows (see VaultDeletePrompt).
+                onVault = { c.moveToVault(sel); selected = emptySet() },
                 onMore = { selectionMenu = true },
                 onClear = { selected = emptySet() },
             )
@@ -480,7 +501,7 @@ fun AlbumsScreen() {
         val vault by c.photoVault.entries.collectAsStateWithLifecycle()
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val pinned = settings.pinnedAlbums
-        val albums = remember(items, pinned) { pinnedFirst(c.media.albums(items), pinned) }
+        val albums = rememberComputed(AlbumsMemo, items, pinned) { pinnedFirst(c.media.albums(items), pinned) }
         var menuFor by remember { mutableStateOf<Album?>(null) }
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             TabTitle(stringResource(R.string.tab_albums))
@@ -693,12 +714,20 @@ fun DuplicatesScreen() {
     }
 }
 
-/** The vault, behind the app PIN when the lock is on. */
+/**
+ * The vault, behind its own PIN screen when the app lock and "Ask for the PIN for the vault" are on: it asks every
+ * time the vault is opened, even though the app is already unlocked.
+ */
 @Composable
 fun VaultGate() {
     val c = LocalContext.current.container
+    val nav = LocalNavigator.current
     val settings by c.settings.settings.collectAsStateWithLifecycle()
-    if (settings.lockVault && c.vault.enabled) AppLockGate { VaultScreen() } else VaultScreen()
+    if (settings.lockVault && c.vault.enabled && !VaultLock.open) {
+        VaultPinScreen(onCancel = { nav.back() })
+    } else {
+        VaultScreen()
+    }
 }
 
 @Composable
@@ -706,16 +735,30 @@ private fun VaultScreen() {
     val context = LocalContext.current
     val c = context.container
     val entries by c.photoVault.entries.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
+    val converting by c.photoVault.converting.collectAsStateWithLifecycle()
+    val unconverted by c.photoVault.unconverted.collectAsStateWithLifecycle()
     var open by remember { mutableStateOf<VaultEntry?>(null) }
+    var restoring by remember { mutableStateOf(false) }
     val px = with(LocalDensity.current) { 120.dp.roundToPx() }
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { c.photoVault.closeCache() } }
+    // Leaving the vault closes it again (its PIN is asked next time) and stops its streams and decrypted copies.
+    DisposableEffect(Unit) {
+        c.photoVault.viewing = true
+        onDispose {
+            VaultLock.open = false
+            c.photoVault.closeCache()
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar(stringResource(R.string.vault))
         if (entries.isEmpty()) {
             MessageView(Icons.Outlined.Lock, stringResource(R.string.vault_empty), stringResource(R.string.vault_body))
         } else {
             Text(stringResource(R.string.vault_hint), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+            if (converting > 0) {
+                Text(stringResource(R.string.vault_converting, converting), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+            } else if (unconverted > 0) {
+                Text(stringResource(R.string.vault_unconverted, unconverted), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+            }
             LazyVerticalGrid(GridCells.Fixed(3), Modifier.fillMaxSize().navigationBarsPadding(), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 items(entries, key = { it.id }) { e ->
                     val bmp by produceState<android.graphics.Bitmap?>(null, e.id) { value = c.photoVault.thumbnail(e, px) }
@@ -729,13 +772,33 @@ private fun VaultScreen() {
     }
     var confirmDelete by remember { mutableStateOf<VaultEntry?>(null) }
     open?.let { e ->
-        VaultViewer(e, onClose = { open = null }, onRestore = { scope.launch { c.photoVault.restore(e); open = null } }, onDelete = { confirmDelete = e })
+        VaultViewer(
+            e,
+            onClose = { open = null },
+            onRestore = {
+                if (!restoring) {
+                    restoring = true
+                    // In the app's scope: a restore that has started always finishes, even if you leave the vault.
+                    c.appScope.launch {
+                        val ok = c.photoVault.restore(e)
+                        restoring = false
+                        if (ok) {
+                            if (open == e) open = null
+                        } else {
+                            // Still in the vault: say so, and keep the viewer open.
+                            Toast.makeText(context, R.string.vault_restore_failed, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            },
+            onDelete = { confirmDelete = e },
+        )
     }
     confirmDelete?.let { e ->
         com.vknxworks.galleryctrl.ui.components.ConfirmDialog(
             stringResource(R.string.vault_delete_title), stringResource(R.string.vault_delete_body), stringResource(R.string.vault_delete),
             onDismiss = { confirmDelete = null },
-        ) { scope.launch { c.photoVault.remove(e) }; confirmDelete = null; open = null }
+        ) { c.appScope.launch { c.photoVault.remove(e) }; confirmDelete = null; open = null }
     }
 }
 

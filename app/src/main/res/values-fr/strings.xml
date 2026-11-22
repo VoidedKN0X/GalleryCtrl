@@ -5,7 +5,7 @@
     <string name="app_lock_subtitle">Demander un code (et, si vous le voulez, votre empreinte) à l\'ouverture de GalleryCtrl. Le coffre peut aussi le demander séparément.</string>
     <string name="app_lock_footer">GalleryCtrl fonctionne entièrement hors ligne : aucune autorisation Internet, aucune statistique, aucun cloud ni service d\'IA. Vos photos restent là où elles sont sur ce téléphone.</string>
     <string name="lock_prompt_subtitle">Vos photos</string>
-    <string name="lock_forgot_body">Le code ne peut pas être récupéré. GalleryCtrl va supprimer tout le contenu du coffre (c\'est ce que le verrouillage protège), réinitialiser ses paramètres et désactiver le verrouillage. Votre bibliothèque de photos elle-même n\'est pas touchée.</string>
+    <string name="lock_forgot_body">Le code ne peut pas être récupéré. GalleryCtrl va supprimer tout le contenu du coffre (c\'est ce que le verrouillage protège), réinitialiser ses paramètres et désactiver le verrouillage. Votre bibliothèque de photos elle-même n\'est pas touchée. Si votre téléphone a un verrouillage d\'écran, vous confirmerez d\'abord avec celui-ci.</string>
 
     <!-- Tabs -->
     <string name="tab_photos">Photos</string>
@@ -106,7 +106,7 @@
     <string name="slide_4">4 secondes</string>
     <string name="slide_8">8 secondes</string>
     <string name="lock_vault">Demander le code pour le coffre</string>
-    <string name="lock_vault_sub">Utilise le code ou l\'empreinte du verrouillage de l\'appli</string>
+    <string name="lock_vault_sub">Demandé à chaque ouverture du coffre, avec le code ou l\'empreinte du verrouillage de l\'appli</string>
     <string name="vault_footer">Le coffre est chiffré en AES-256 avec une clé conservée dans le matériel sécurisé de ce téléphone. Il n\'est pas inclus dans les sauvegardes.</string>
 
     <!-- Pinned and hidden folders -->
@@ -212,4 +212,16 @@
     <string name="backup_none">aucun</string>
     <string name="backup_restore_confirm">Restaurer</string>
     <string name="backup_restored">Paramètres restaurés</string>
+    <string name="lock_reset_prompt_title">Réinitialiser le verrouillage de GalleryCtrl</string>
+    <string name="lock_reset_prompt_subtitle">Utilisez le verrouillage d\'écran de votre téléphone pour confirmer votre identité. Cela supprime le coffre.</string>
+    <string name="lock_reset_prompt_failed">Impossible d\'afficher le verrouillage d\'écran</string>
+    <string name="vault_enter_pin">Saisissez votre code pour ouvrir le coffre</string>
+    <string name="vault_prompt_subtitle">Ouvrir le coffre</string>
+    <string name="vault_restore_failed">Impossible de restaurer cet élément. Il est toujours dans le coffre.</string>
+    <string name="vault_converting">Mise à jour du chiffrement du coffre : encore %1$d. Tout reste consultable en attendant.</string>
+    <string name="vault_unconverted">%1$d encore dans l\'ancien format (trop volumineux ou illisible pour l\'instant). Ils restent tels quels dans le coffre ; GalleryCtrl réessaiera au prochain démarrage.</string>
+    <plurals name="vault_add_failed">
+        <item quantity="one">%1$d élément n\'a pas pu être placé dans le coffre. Il est toujours dans votre bibliothèque.</item>
+        <item quantity="other">%1$d éléments n\'ont pas pu être placés dans le coffre. Ils sont toujours dans votre bibliothèque.</item>
+    </plurals>
 </resources>

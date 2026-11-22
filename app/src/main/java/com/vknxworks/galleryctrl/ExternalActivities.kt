@@ -28,7 +28,8 @@ class ViewActivity : ComponentActivity() {
             return
         }
         val mime = intent.type ?: runCatching { contentResolver.getType(uri) }.getOrNull()
-        setContent { CtrlWindow(this) { ExternalViewer(uri, mime, onClose = ::finish) } }
+        val firstFrame = startHidden()
+        setContent { CtrlWindow(this, onSettingsShown = { firstFrame.ready = true }) { ExternalViewer(uri, mime, onClose = ::finish) } }
     }
 }
 
@@ -55,8 +56,9 @@ class PickActivity : ComponentActivity() {
         val filter = MimeFilter.of(type, i?.getStringArrayExtra(Intent.EXTRA_MIME_TYPES))
         val multiple = i?.action == Intent.ACTION_GET_CONTENT && i.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
         setResult(Activity.RESULT_CANCELED)
+        val firstFrame = startHidden()
         setContent {
-            CtrlWindow(this) {
+            CtrlWindow(this, onSettingsShown = { firstFrame.ready = true }) {
                 PickerScreen(filter, multiple, onCancel = ::finish) { uris -> deliver(uris) }
             }
         }

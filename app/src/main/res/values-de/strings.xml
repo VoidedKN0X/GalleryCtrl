@@ -5,7 +5,7 @@
     <string name="app_lock_subtitle">Beim Öffnen von GalleryCtrl nach einer App-PIN (und auf Wunsch deinem Fingerabdruck) fragen. Auch der Tresor kann eigens danach fragen.</string>
     <string name="app_lock_footer">GalleryCtrl funktioniert komplett offline: keine Internetberechtigung, keine Analysen, keine Cloud und kein KI-Dienst. Deine Fotos bleiben, wo sie auf diesem Smartphone sind.</string>
     <string name="lock_prompt_subtitle">Deine Fotos</string>
-    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. GalleryCtrl löscht alles im Tresor (das schützt die Sperre), setzt seine Einstellungen zurück und schaltet die App-Sperre aus. Deine Fotomediathek selbst bleibt unberührt.</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. GalleryCtrl löscht alles im Tresor (das schützt die Sperre), setzt seine Einstellungen zurück und schaltet die App-Sperre aus. Deine Fotomediathek selbst bleibt unberührt. Wenn dein Smartphone eine Displaysperre hat, bestätigst du zuerst damit.</string>
 
     <!-- Tabs -->
     <string name="tab_photos">Fotos</string>
@@ -106,7 +106,7 @@
     <string name="slide_4">4 Sekunden</string>
     <string name="slide_8">8 Sekunden</string>
     <string name="lock_vault">PIN für den Tresor abfragen</string>
-    <string name="lock_vault_sub">Verwendet PIN oder Fingerabdruck der App-Sperre</string>
+    <string name="lock_vault_sub">Wird bei jedem Öffnen des Tresors abgefragt, mit PIN oder Fingerabdruck der App-Sperre</string>
     <string name="vault_footer">Der Tresor ist mit AES-256 und einem Schlüssel in der sicheren Hardware dieses Smartphones verschlüsselt. Er ist nicht in Sicherungen enthalten.</string>
 
     <!-- Pinned and hidden folders -->
@@ -212,4 +212,16 @@
     <string name="backup_none">keine</string>
     <string name="backup_restore_confirm">Wiederherstellen</string>
     <string name="backup_restored">Einstellungen wiederhergestellt</string>
+    <string name="lock_reset_prompt_title">App-Sperre von GalleryCtrl zurücksetzen</string>
+    <string name="lock_reset_prompt_subtitle">Bestätige mit der Displaysperre deines Smartphones, dass du es bist. Dabei wird der Tresor gelöscht.</string>
+    <string name="lock_reset_prompt_failed">Displaysperre konnte nicht angezeigt werden</string>
+    <string name="vault_enter_pin">Gib deine PIN ein, um den Tresor zu öffnen</string>
+    <string name="vault_prompt_subtitle">Tresor öffnen</string>
+    <string name="vault_restore_failed">Dieses Element konnte nicht wiederhergestellt werden. Es ist noch im Tresor.</string>
+    <string name="vault_converting">Die Verschlüsselung des Tresors wird aktualisiert: noch %1$d. Alles bleibt in der Zwischenzeit sichtbar.</string>
+    <string name="vault_unconverted">%1$d noch im alten Format (zu groß oder gerade nicht lesbar). Sie bleiben unverändert im Tresor; GalleryCtrl versucht es beim nächsten Start erneut.</string>
+    <plurals name="vault_add_failed">
+        <item quantity="one">%1$d Element konnte nicht in den Tresor verschoben werden. Es ist noch in deiner Mediathek.</item>
+        <item quantity="other">%1$d Elemente konnten nicht in den Tresor verschoben werden. Sie sind noch in deiner Mediathek.</item>
+    </plurals>
 </resources>

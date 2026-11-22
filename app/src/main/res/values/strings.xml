@@ -5,7 +5,7 @@
     <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening GalleryCtrl. The vault can ask for it on its own too.</string>
     <string name="app_lock_footer">GalleryCtrl works fully offline: it has no internet permission, analytics, cloud or AI service. Your photos stay where they are on this phone.</string>
     <string name="lock_prompt_subtitle">Your photos</string>
-    <string name="lock_forgot_body">The PIN can\'t be recovered. GalleryCtrl will delete everything in the vault (it\'s what the lock protects), reset its settings and turn the app lock off. Your photo library itself isn\'t touched.</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered. GalleryCtrl will delete everything in the vault (it\'s what the lock protects), reset its settings and turn the app lock off. Your photo library itself isn\'t touched. If your phone has a screen lock, you\'ll confirm with it first.</string>
 
     <!-- Tabs -->
     <string name="tab_photos">Photos</string>
@@ -106,7 +106,7 @@
     <string name="slide_4">4 seconds</string>
     <string name="slide_8">8 seconds</string>
     <string name="lock_vault">Ask for the PIN for the vault</string>
-    <string name="lock_vault_sub">Uses the app lock\'s PIN or fingerprint</string>
+    <string name="lock_vault_sub">Asked every time you open the vault, with the app lock\'s PIN or fingerprint</string>
     <string name="vault_footer">The vault is encrypted with AES-256 and a key held in this phone\'s secure hardware. It isn\'t included in backups.</string>
 
     <!-- Pinned and hidden folders -->
@@ -212,4 +212,16 @@
     <string name="backup_none">none</string>
     <string name="backup_restore_confirm">Restore</string>
     <string name="backup_restored">Settings restored</string>
+    <string name="lock_reset_prompt_title">Reset GalleryCtrl\'s app lock</string>
+    <string name="lock_reset_prompt_subtitle">Use your phone\'s screen lock to confirm it\'s you. This deletes the vault.</string>
+    <string name="lock_reset_prompt_failed">Couldn\'t show the screen lock prompt</string>
+    <string name="vault_enter_pin">Enter your PIN to open the vault</string>
+    <string name="vault_prompt_subtitle">Open the vault</string>
+    <string name="vault_restore_failed">Couldn\'t restore this item. It\'s still in the vault.</string>
+    <string name="vault_converting">Updating the vault\'s encryption: %1$d left. Everything stays viewable meanwhile.</string>
+    <string name="vault_unconverted">%1$d still in the old format (too large or not readable right now). They stay in the vault as they are; GalleryCtrl tries again at the next start.</string>
+    <plurals name="vault_add_failed">
+        <item quantity="one">%1$d item couldn\'t be moved to the vault. It\'s still in your library.</item>
+        <item quantity="other">%1$d items couldn\'t be moved to the vault. They\'re still in your library.</item>
+    </plurals>
 </resources>

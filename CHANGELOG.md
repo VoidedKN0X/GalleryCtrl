@@ -4,6 +4,33 @@ What changed in each GalleryCtrl release. Every release on the [Releases page](h
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone yet. **Before updating, make a copy of anything precious in the vault** (restore it to your library, or back it up some other way): this version converts the vault's files to a new format the first time it starts.
+
+### Security
+
+- **The vault asks for its PIN again.** With the app lock on and *Settings > Vault > Ask for the PIN for the vault* on (the default), opening **Albums > Vault** now shows the PIN pad (and offers your fingerprint) every time, even though the app is already unlocked. Before, the vault opened straight away, so anyone you handed the open gallery to could look inside. It uses the same PIN, fingerprint and wrong-PIN lockout as the app lock (wrong guesses here count towards the same waiting time). Back or *Cancel* leaves without opening it. Leaving the vault, or the app locking, closes it again. The PIN screen is kept out of screenshots, like the app's own lock screen.
+- **"Forgot PIN?" now needs your phone's own screen lock.** Resetting the lock deletes everything in the vault and turns the app lock off, so it was a way past the lock (and a delete button) for anyone holding your unlocked phone. Now, after *Reset the app lock*, Android asks for your phone's screen lock (PIN, pattern, password or fingerprint) first; nothing is deleted if you cancel. If your phone has no screen lock at all, the confirmation dialog is all there is, as before. The dialog still warns that the vault will be deleted.
+- **"Hide in screenshots" applies from the very first frame.** GalleryCtrl (and its *Open with* viewer and photo picker) now starts out hidden from screenshots and holds its first frame until your saved settings are read (at most half a second), instead of showing a few frames with the default settings.
+
+### Changed
+
+- **New vault format: videos of any size play, seek and restore.** Before, a vault file was one encrypted stream that the phone's secure hardware only hands back once the whole file is in memory, so large videos (a few hundred MB and up) failed to play or to be restored, and every vault thumbnail decrypted the whole original. Now every file gets its own random key (protected by the vault key in the secure hardware, as before) and is encrypted in 64 KB pieces that are each checked on their own:
+  - Vault videos stream straight from the encrypted file while you watch, and seeking works. No decrypted copy is written to the phone's storage any more.
+  - *Restore to library* copies piece by piece, so any size works.
+  - Large vault photos (over 64 MB) are decoded from the encrypted file directly instead of through a decrypted copy.
+  - Each item now has a small encrypted thumbnail, so the vault grid loads quickly; vault videos now get a thumbnail too.
+  - Anything changed, swapped or cut off in a vault file is refused rather than shown.
+- **Your existing vault is converted once, safely.** At the first start of this version, GalleryCtrl converts the vault's files in the background, smallest first. The vault shows *Updating the vault's encryption: N left* meanwhile; everything stays viewable. For each file it writes the new copy, reads it back completely and compares it with the original, and only then deletes the old file. If the app is closed or the phone switches off half-way, it carries on at the next start; no file is ever deleted before its new copy has been checked. A file that can't be converted (too large for the old format to decrypt in memory, or not readable right now) stays exactly as it is, still opens the old way, and is tried again at the next start; the vault then says how many are left in the old format. To give big old files the best chance, GalleryCtrl may now use more memory when it needs to (Android's "large heap").
+- **Smoother return from the viewer and between tabs.** Coming back to Photos or Albums no longer reads your whole library again (the library is already followed for changes), and grouping photos by day and listing albums for a changed library happens in the background instead of stalling the screen. A grid you return to keeps its grouping, so it shows straight away.
+- **Less work in the background.** While GalleryCtrl is in the background, changes to your library made by other apps (a camera burst, a download, a sync app) no longer each trigger a full re-read; GalleryCtrl notes that something changed and reads the library once when you come back. A running slideshow also pauses while GalleryCtrl isn't on screen.
+
+### Fixed
+
+- **Moving to the vault and then leaving the screen.** If you left the grid or viewer while photos were being encrypted, they ended up both in the vault and still in your library, without the delete request. Moving now always finishes, and Android's request to delete the originals appears as soon as GalleryCtrl is on screen again. If some items couldn't be moved, a message says how many; they stay in your library.
+- **A failed restore no longer looks like it worked.** If *Restore to library* fails, a message says so and the item stays open in the vault (before, the viewer just closed). A restore that has started now also finishes if you leave the vault.
+
 ## v0.6.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

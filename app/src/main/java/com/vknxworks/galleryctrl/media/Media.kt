@@ -73,18 +73,58 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
     private var reloadJob: Job? = null
 
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
-        override fun onChange(selfChange: Boolean) = reload(debounce = true)
+        override fun onChange(selfChange: Boolean) {
+            // In the background a change is only noted; the library is read again once GalleryCtrl is back.
+            if (inBackground) dirty = true else reload(debounce = true)
+        }
     }
 
     /** Whether [observer] is registered: the main screen and the picker may both start the library. */
     private var observing = false
 
-    fun start() {
+    /** The access [start] last read the library with (all photos, or only the ones you picked). */
+    private var startedWith: Any? = NOT_STARTED
+
+    /** GalleryCtrl is in the background: library changes wait (see [onBackground]). Main thread only. */
+    private var inBackground = false
+    private var dirty = false
+
+    /**
+     * Starts watching the library and reads it the first time, or again when the access changed ([access], for
+     * example from only the photos you picked to all of them). Coming back to a screen doesn't read it again: the
+     * observer already follows every change.
+     */
+    fun start(access: Any? = null) {
         if (!observing) {
             context.contentResolver.registerContentObserver(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL), true, observer)
             observing = true
         }
-        reload()
+        if (startedWith != access || (_items.value.isEmpty() && loading.value && reloadJob?.isActive != true)) {
+            startedWith = access
+            reload()
+        }
+    }
+
+    /**
+     * The app went to the background: changes other apps make to the library (a camera burst, a sync app) no longer
+     * read the whole library again each time; they are noted, and [onForeground] reads it once. Main thread.
+     */
+    fun onBackground() {
+        inBackground = true
+        // A re-read that was only waiting for more changes to settle is postponed too.
+        if (reloadJob?.isActive == true && !loading.value) {
+            reloadJob?.cancel()
+            dirty = true
+        }
+    }
+
+    /** Back in the foreground: reads the library once if it changed meanwhile. Main thread. */
+    fun onForeground() {
+        inBackground = false
+        if (dirty) {
+            dirty = false
+            if (observing) reload()
+        }
     }
 
     fun reload(debounce: Boolean = false) {
@@ -219,6 +259,7 @@ class MediaRepository(private val context: Context, private val scope: Coroutine
     }
 
     private companion object {
+        val NOT_STARTED = Any()
         const val THUMB_LOADERS = 4
         const val FIRST_ROWS = 500
     }
